@@ -15,7 +15,6 @@
 
 **联系方式**：
 - 技术博客：[掘金主页](https://juejin.cn/user/854784222958441/posts)
-- Gitee：[fangfang007](https://gitee.com/fangfang007/llm-testing-portfolio)
 - GitHub：[BighuaBighua](https://github.com/BighuaBighua/llm-testing-portfolio.git)
 
 ---
