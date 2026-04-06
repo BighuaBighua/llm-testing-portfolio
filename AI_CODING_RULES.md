@@ -712,7 +712,6 @@ def test_generate_test_case_with_empty_requirement_raises_error():
 generate_test_cases.py      # 生成测试用例
 run_evaluations.py          # 运行评测
 compare_cot_methods.py      # 对比 CoT 方法
-setup_git_hooks.sh          # 设置 Git Hook
 ```
 
 **❌ 错误示例**:
@@ -743,7 +742,6 @@ manage, configure, install, deploy, publish, download, upload
 how-to-install.md
 getting-started.md
 customer-service-evaluator.md
-cot-no-chain.md
 ```
 
 **❌ 错误示例**:
@@ -762,7 +760,6 @@ GettingStarted.md           # 驼峰
 
 **✅ 正确示例**:
 ```
-project_data.json
 test_cases.json
 records.json
 results.json

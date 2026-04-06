@@ -130,16 +130,18 @@ AI客服系统自动化测试执行脚本
 """
 
 import os
+import sys
 import json
 import time
 import requests
 import argparse
+from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Set
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from record_test_run import TestRunRecorder
-from config import (
+from tools.record_test_run import TestRunRecorder
+from tools.model_config import (
     MODEL_UNDER_TEST,
     EVALUATOR_MODEL,
     API_ENDPOINT,

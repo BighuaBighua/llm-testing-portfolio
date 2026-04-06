@@ -516,7 +516,6 @@ CoT 保证逐条校验不漏判
 | **官方业务知识** | 3条（发货/退款时效） | 相同 |
 | **Few-shot 示例** | 3个（合规/态度违规/越界） | 相同，但每条附带推理过程 |
 | **输出要求** | 直接给结论，不写推理 | 必须按【范围→态度→真实性】逐条校验 |
-| **模板文件** | [cot-no-chain.md](../projects/01-prompt-engineering/src/prompt-templates/cot-no-chain.md) | [cot-with-chain.md](../projects/01-prompt-engineering/src/prompt-templates/cot-with-chain.md) |
 
 #### 测试用例
 

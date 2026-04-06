@@ -1,223 +1,366 @@
 # LLM Testing Portfolio
 
-> A 10-year testing veteran's journey into LLM quality assurance.  
-> 十年测试老兵的大模型质量保障学习之旅
+> 大模型质量保障作品集
 
 ---
 
-## 👋 About Me | 关于我
+## 关于我
+**技术方向**：大模型测试（Prompt工程、API测试、模型评估、数据处理）
 
-- **Background**: 10+ years in software testing, focusing on quality assurance and automation  
-  **背景**：10年+软件测试经验，专注于质量保障和自动化测试
-- **Current Focus**: Learning and applying LLM testing techniques (prompt engineering, API testing, model evaluation)  
-  **当前专注**：学习和应用大模型测试技术（Prompt工程、API测试、模型评估）
-- **Technical Blog**: [我的掘金主页](https://juejin.cn/user/854784222958441/posts)
+**核心能力**：
+- ✅ Prompt工程与评测用例设计
+- ✅ Python自动化测试开发
+- ✅ 大模型评估指标与A/B测试
+- ✅ 评测数据处理与可视化
 
----
-
-## 🎯 Portfolio Overview | 作品集概览
-
-This portfolio documents my learning journey as I transition into LLM testing.  
-这个作品集记录了我转型进入大模型测试领域的学习历程。
-
-**What I'm building | 正在构建：**
-- 🚧 Prompt engineering and optimization skills | Prompt 工程和优化技能
-- 📅 API testing automation for LLMs | 大模型 API 自动化测试
-- 📅 Model evaluation metrics and tools | 模型评估指标和工具
-- 📅 Data processing for testing workflows | 测试数据处理工具
-
-**Current Stage | 当前阶段**: Learning and experimenting. This portfolio will grow as I progress through my LLM testing course and build practical projects.  
-学习与实验中。随着学习进度和项目实践，这个作品集会持续成长。
+**联系方式**：
+- 技术博客：[掘金主页](https://juejin.cn/user/854784222958441/posts)
+- Gitee：[fangfang007](https://gitee.com/fangfang007/llm-testing-portfolio)
+- GitHub：[BighuaBighua](https://github.com/BighuaBighua/llm-testing-portfolio.git)
 
 ---
 
-## 📦 Projects | 项目
+## 项目结构
 
-### 1. [Prompt Engineering Framework](./projects/01-prompt-engineering/)
-
-**Goal | 目标**: Build a systematic approach to design, test, and optimize prompts.  
-构建系统化的 Prompt 设计、测试和优化方法。
-
-**Planned Features | 计划功能**:
-- Prompt template library | Prompt 模板库
-- Evaluation metrics for prompt effectiveness | Prompt 效果评估指标
-- A/B testing framework | A/B 测试框架
-- Best practices documentation | 最佳实践文档
-
-**Status | 状态**: 🚧 **In Progress 进行中** - Learning prompt engineering basics
-
-**Progress | 进度**:
-- [ ] Complete prompt engineering course module | 完成 Prompt 工程课程模块
-- [ ] Build 5+ basic prompt templates | 构建 5+ 个基础 Prompt 模板
-- [ ] Implement simple evaluation logic | 实现简单评估逻辑
-- [ ] Document learnings | 记录学习笔记
-
----
-
-### 2. [API Testing Suite](./projects/02-api-testing/)
-
-**Goal | 目标**: Create automated testing framework for LLM APIs.  
-创建大模型 API 的自动化测试框架。
-
-**Planned Features | 计划功能**:
-- API client for OpenAI, Claude, etc. | OpenAI、Claude 等 API 客户端
-- Retry and error handling mechanisms | 重试和错误处理机制
-- Test case design patterns | 测试用例设计模式
-- Reporting and logging | 报告和日志
-
-**Status | 状态**: 📅 **Planned 计划中** - Starting after prompt engineering module  
-将在 Prompt 工程模块完成后启动
+```
+llm-testing-portfolio/
+├── docs/                           # 项目文档库
+│   ├── prompt-engineering-guide.md # Prompt 工程技术方案
+│   ├── roadmap.md                  # 学习路线图
+│   ├── architecture/               # 架构设计文档
+│   ├── technical-analysis/         # 技术分析文档
+│   └── user-guide/                 # 使用指南
+├── projects/                       # 项目案例
+│   └── 01-ai-customer-service/     # AI 客服系统评测项目
+│       ├── cases/                  # 测试用例库
+│       │   ├── universal.json      # 通用评测用例（50条）
+│       │   ├── universal.md        # 用例说明文档
+│       │   └── customer-service.md # 用例设计文档
+│       └── results/                # 测试结果（按批次存储）
+│           ├── batch-001_2026-04-05/
+│           └── batch-002_2026-04-05/
+├── scripts/                        # 自动化脚本
+│   ├── run_tests.py               # 主入口：运行测试
+│   ├── generate_test_cases.py     # 入口：生成测试用例
+│   └── tools/                     # 辅助模块
+│       ├── model_config.py        # 配置管理
+│       └── record_test_run.py     # 执行记录
+├── templates/                      # Prompt 模板库
+│   └── customer-service-evaluator.md # AI客服评测器
+└── README.md                       # 本文件
+```
 
 ---
 
-### 3. [Evaluation Metrics Pipeline](./projects/03-evaluation-metrics/)
+## 快速开始
 
-**Goal | 目标**: Build evaluation tools for LLM performance assessment.  
-构建大模型性能评估工具。
+### 环境准备
 
-**Planned Features | 计划功能**:
-- Implement BLEU, ROUGE, Perplexity metrics | 实现 BLEU、ROUGE、Perplexity 等指标
-- Automated evaluation pipeline | 自动化评估流程
-- Comparison tools for different models | 不同模型对比工具
-- Visualization and reporting | 可视化和报告
+```bash
+# 1. 克隆项目
+git clone https://github.com/BighuaBighua/llm-testing-portfolio.git
+或
+git clone https://gitee.com/fangfang007/llm-testing-portfolio
 
-**Status | 状态**: 📅 **Planned 计划中** - Starting after API testing module
+cd llm-testing-portfolio
 
----
+# 2. 配置 API Key
+cp .env.example .env
+# 编辑 .env 文件，填入你的文心一言 API Key
+# 如何获取 API Key：
+# 1. 访问百度智能云控制台：https://console.bce.baidu.com/qianfan/
+# 2. 创建应用，获取 API Key 和 Secret Key
+# 3. 将 QIANFAN_AK 和 QIANFAN_SK 替换为你的实际值
 
-### 4. [Data Processing Toolkit](./projects/04-data-processing/)
+# 3. 安装依赖
+pip install -r requirements.txt
+```
 
-**Goal | 目标**: Develop data management tools for LLM testing workflows.  
-开发大模型测试流程的数据管理工具。
+### 运行测试
 
-**Planned Features | 计划功能**:
-- SQL queries for test data analysis | 用于测试数据分析的 SQL 查询
-- Pandas-based data cleaning pipeline | 基于 Pandas 的数据清洗流程
-- Data validation utilities | 数据验证工具
-- Test dataset management | 测试数据集管理
+```bash
+# 进入项目目录
+cd projects/01-ai-customer-service
 
-**Status | 状态**: 📅 **Planned 计划中** - Starting after evaluation metrics module
+# 单条执行（健康检查）
+python3 ../../scripts/run_tests.py --mode single
 
----
+# 全量执行（所有用例）
+python3 ../../scripts/run_tests.py --mode full
 
-## 🧪 Experiments | 实验记录
+# 增量执行（只执行新用例）
+python3 ../../scripts/run_tests.py --mode incremental --batch-id batch-003
 
-As I learn, I'll document my experiments and findings:  
-我会在学习过程中记录实验和发现：
-
-- **Experiment 001**: Prompt Variations - How different prompt structures affect LLM responses | Prompt 变体 - 不同结构如何影响大模型响应
-- **Experiment 002**: API Retry Strategies - Optimizing reliability for LLM API calls | API 重试策略 - 优化大模型 API 调用的可靠性
-- **Experiment 003**: Evaluation Metrics Comparison - Understanding different evaluation approaches | 评估指标对比 - 理解不同评估方法
-
-See [experiments/](./experiments/) for detailed experiment logs.  
-查看 [experiments/](./experiments/) 获取详细实验日志。
-
----
-
-## 📝 Technical Blog | 技术博客
-
-I share my learning notes and insights on 掘金:  
-我在掘金分享学习笔记和心得：
-
-👉 [查看所有文章](https://juejin.cn/user/854784222958441/posts)
-
-*Note: I'll be publishing LLM testing-related articles as I progress through my learning journey.*  
-*注：随着学习进度，我会持续发布大模型测试相关文章。*
+# 查看最新测试报告
+cat results/batch-*/summary.md
+```
 
 ---
 
-## 📚 Learning Notes | 学习笔记
+## 自动化脚本
 
-Structured notes from my LLM testing course:  
-大模型测试课程的结构化笔记：
+### run_tests.py ✅ 推荐 已验证
 
-- [Week 1: Prompt Engineering](./learning/notes/week1-prompt-engineering.md) - In progress 进行中
-- [Week 2: Python Testing](./learning/notes/week2-python-testing.md) - Planned 计划中
-- [Week 3: Evaluation Metrics](./learning/notes/week3-evaluation-metrics.md) - Planned 计划中
+**功能**:
+- 批次管理
+- 三文件分离架构
+- 支持通过率统计
+- 支持多种执行模式（单条/指定用例/增量/全量）
+- 支持报告输出模式（新建/追加/更新/仅生成报告）
+- 支持并发执行（注意API QPS限制）
 
-See [learning/notes/](./learning/notes/) for detailed learning logs.  
-查看 [learning/notes/](./learning/notes/) 获取详细学习记录。
+**参数说明**:
+
+| 参数 | 说明 | 默认值 | 可选值 |
+|------|------|--------|--------|
+| `--mode` | 执行模式 | `full` | `single` `selected` `incremental` `full` |
+| `--cases` | 指定用例ID（多选用逗号分隔） | `None` | 如: `TC-ACC-001,TC-COM-002` |
+| `--report` | 报告输出模式 | `new` | `new` `append` `update` |
+| `--batch-id` | 批次ID（用于增量/追加/更新/仅生成报告） | `None` | 如: `batch-003` |
+| `--report-only` | 仅重新生成报告（不执行测试） | `False` | 无需值，直接添加参数即可 |
+| `--concurrent` | 并发数（0=单线程） | `0` | 建议不超过 `2` |
+
+**使用方法**:
+
+```bash
+# 1. 单条执行（健康检查）
+python3 run_tests.py --mode single
+
+# 2. 指定用例执行
+python3 run_tests.py --mode selected --cases TC-ACC-001,TC-COM-002
+
+# 3. 增量执行（只执行新用例）
+python3 run_tests.py --mode incremental --batch-id batch-003
+
+# 4. 全量执行（所有用例）
+python3 run_tests.py --mode full
+
+# 5. 新建测试批次
+python3 run_tests.py --mode full --report new
+
+# 6. 追加测试结果到现有批次
+python3 run_tests.py --mode incremental --report append --batch-id batch-003
+
+# 7. 更新现有批次报告
+python3 run_tests.py --mode full --report update --batch-id batch-003
+
+# 8. 重新生成报告（不执行测试）
+python3 run_tests.py --report-only --batch-id batch-004
+
+# 9. 并发执行（注意API QPS限制）
+python3 run_tests.py --mode full --concurrent 2
+```
+
+**执行模式说明**:
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| `single` | 执行第1条用例 | 健康检查、快速验证API连通性 |
+| `selected` | 执行指定ID的用例 | 重新测试特定用例、调试 |
+| `incremental` | 只执行未执行的用例 | 持续测试、避免重复执行 |
+| `full` | 执行所有用例 | 完整测试、回归测试 |
+
+**报告输出模式说明**:
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| `new` | 创建新批次目录 | 首次测试、新版本测试 |
+| `append` | 追加结果到现有批次 | 增量测试、补充测试 |
+| `update` | 重新生成批次报告 | 报告损坏、需要重新汇总 |
+| `report-only` | 仅重新生成报告（不执行测试） | 报告损坏、格式调整 |
+
+### generate_test_cases.py ✅ 已验证
+
+**功能**:
+- 通用性
+- 覆盖全面
+- 分批生成
+- 支持维度选择
+- 支持追加模式（自动判断有无现有用例）
+
+**参数说明**:
+
+| 参数 | 说明 | 默认值 | 可选值 |
+|------|------|--------|--------|
+| `--dimensions` | 指定要生成的维度（逗号分隔） | `None`（所有维度） | 如: `boundary,conflict,induction` |
+| `--append` | 追加模式（有则追加，无则新建） | `False`（覆盖模式） | 无需值，直接添加参数即可 |
+
+**使用方法**:
+
+```bash
+# 1. 生成所有维度用例（默认）
+python3 generate_test_cases.py
+
+# 2. 生成指定维度用例
+python3 generate_test_cases.py --dimensions boundary,conflict,induction
+
+# 3. 追加模式（自动判断：有则追加，无则新建）
+python3 generate_test_cases.py --append
+
+# 4. 生成复杂场景用例并追加到现有用例
+python3 generate_test_cases.py --dimensions boundary,conflict,induction --append
+```
+
+**维度列表**:
+
+| 维度 | 说明 | 状态 |
+|------|------|------|
+| `accuracy` | 准确性维度 | 基础维度 |
+| `completeness` | 完整性维度 | 基础维度 |
+| `compliance` | 合规性维度 | 基础维度 |
+| `attitude` | 态度维度 | 基础维度 |
+| `multi` | 多维度组合 | 基础维度 |
+| `boundary` | 边界场景（模糊问题、多轮对话、越界请求） | 新增 ✨ |
+| `conflict` | 多维度冲突场景（准确性vs态度、完整性vs合规性） | 新增 ✨ |
+| `induction` | 诱导场景（诱导说谎、诱导提供专业建议、诱导泄露隐私） | 新增 ✨ |
 
 ---
 
-## 🛠️ Tech Stack | 技术栈
+## Prompt 模板库
 
-Technologies I'm learning and using:  
-正在学习和使用的技术：
+### 已验证模板
 
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
-![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=flat&logo=pytest&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat&logo=openai&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white)
-![Git](https://img.shields.io/badge/Git-F05032?style=flat&logo=git&logoColor=white)
+#### customer-service-evaluator.md
 
----
+**场景**: AI 客服系统合规评测
 
-## 📈 Current Stats | 当前统计
+**核心设计**:
+- 角色锚定: 电商 AI 客服系统合规评测工程师
+- 评测维度: 服务范围 / 服务态度 / 内容真实性
+- 输出格式: 固定结构，支持脚本解析
 
-**Learning Progress | 学习进度**:
-- 🎯 1 project in progress (Prompt Engineering) | 1个项目进行中
-- 📅 3 projects planned | 3个项目计划中
-- 🧪 3 experiments planned | 3个实验计划中
-- 📝 Learning notes being documented | 学习笔记正在记录中
+**使用方法**:
+```bash
+cd ../scripts
+python run_tests.py  # 运行测试用例
+```
 
-*Stats will be updated as projects progress*  
-*统计数据会随项目进度更新*
+### 模板设计原则
 
----
-
-## 🗓️ Timeline | 时间线
-
-- **2026-03**: Started LLM testing learning journey | 开始大模型测试学习之旅
-- **2026-04-01**: Created this portfolio to document progress | 创建作品集记录进度
-- **2026-04**: Focused on prompt engineering module | 专注 Prompt 工程模块
-- **Next**: API testing automation | 下一步：API 自动化测试
-- **Ongoing**: Building projects and sharing learnings | 持续构建项目和分享学习心得
+1. **规则刚性化**: 可量化、无歧义、非黑即白
+2. **Few-shot 单测点**: 每个示例只覆盖一个规则点
+3. **格式统一**: 示例格式 = 输出格式，支持脚本解析
+4. **CoT 强制校验**: 多规则场景必须分步校验
 
 ---
 
-## 💭 Why This Portfolio? | 为什么创建这个作品集？
+## 文档库
 
-As a testing veteran with 10+ years of experience, I believe in:  
-作为一名拥有10年+经验的测试老兵，我相信：
+### 核心技术文档
 
-1. **Learning by doing** - Each project is hands-on practice  
-   **在实战中学习** - 每个项目都是动手实践
-   
-2. **Documenting the journey** - Notes and experiments help solidify knowledge  
-   **记录成长过程** - 笔记和实验帮助巩固知识
-   
-3. **Sharing knowledge** - Blog posts contribute to the community  
-   **分享知识** - 博客文章回馈社区
-   
-4. **Building in public** - Open source portfolio shows real progress  
-   **公开构建** - 开源作品集展示真实进度
+- [Prompt 工程技术方案](./docs/prompt-engineering-guide.md) - AI 评测场景下的 Prompt 设计方法论
+- [学习路线图](./docs/roadmap.md) - 8-12 周学习规划
 
-This portfolio is not just about showcasing skills - it's about demonstrating my learning process, problem-solving approach, and growth as I enter the LLM testing field.  
-这个作品集不只是展示技能 - 更是展示我进入大模型测试领域的学习过程、问题解决方法和成长轨迹。
+### 架构设计
+
+- [TestRunRecorder 工作流程](./docs/architecture/test-run-recorder-workflow.md) - 测试运行审计和追溯模块
+
+### 技术分析
+
+- [Bad Case 分析报告](./docs/technical-analysis/bad-case-analysis.md) - 失败用例深度分析
+- [Few-shot 设计分析](./docs/technical-analysis/fewshot-design-analysis.md) - Few-shot 示例设计思路
+- [测试用例版本管理逻辑](./docs/technical-analysis/test-case-version-management-logic.md) - 版本管理方案
+
+### 使用指南
+
+- [测试报告解读指南](./docs/user-guide/report-interpretation.md) - 如何理解测试报告
+- [中断恢复指南](./docs/user-guide/interruption-recovery.md) - 测试中断后的恢复策略
+
+### 文档价值说明
+
+**面试官最关心的文档**：
+1. ⭐⭐⭐⭐⭐ Prompt 工程技术方案 - 展示核心能力
+2. ⭐⭐⭐⭐⭐ 架构设计 - 展示系统设计思维
+3. ⭐⭐⭐⭐ 技术分析 - 展示问题分析能力
+
+**用户最关心的文档**：
+- 使用指南 - 如何使用项目
 
 ---
 
-## 📫 Connect | 联系方式
+## 可复用性
 
-- **掘金**: [我的主页](https://juejin.cn/user/854784222958441/posts)
-- **GitHub**: [BighuaBighua](https://github.com/BighuaBighua)
-- **Email**: LLindaWang@outlook.com
+### 模板迁移
 
-Feel free to reach out if you're also learning LLM testing or want to discuss testing practices!  
-如果你也在学习大模型测试或想讨论测试实践，欢迎联系！
+当前模板可直接应用于：
+
+| 场景 | 迁移成本 | 验证状态 |
+|------|---------|---------|
+| 内容审核 | 低（修改规则部分） | 📅 待验证 |
+| 对话质量评估 | 中（增加评分维度） | 📅 待验证 |
+| 幻觉检测 | 低（替换知识库部分） | 📅 待验证 |
+
+### 工具开源
+
+- ✅ 自动化评测脚本：`scripts/run_tests.py`（推荐）
+- ✅ CoT 对比脚本：`scripts/compare_cot_methods.py`
+- ✅ Prompt 模板库：`templates/`
 
 ---
 
-## 📄 License | 许可证
+## 三文件分离架构
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.  
+### 文件1：测试用例模板（`universal.json`）
+
+**作用**: 记录测试意图
+
+**字段**:
+- `id`: 用例ID
+- `dimension`: 评测维度
+- `input`: 用户提问
+- `test_purpose`: 测试目的
+- `quality_criteria`: 质量标准
+
+### 文件2：执行记录（`records.json`）
+
+**作用**: 记录AI的实际回答（证据）
+
+**字段**:
+- `id`: 用例ID
+- `input`: 用户提问
+- `actual_response`: AI的实际回答
+- `timestamp`: 执行时间
+- `model`: 使用的模型
+
+### 文件3：评测结果（`results.json`）
+
+**作用**: 记录评测模型的判定（判决书）
+
+**字段**:
+- `id`: 用例ID
+- `dimension`: 评测维度
+- `input`: 用户提问
+- `actual_response`: AI的实际回答
+- `evaluation_result`: 评测结果（通过/不通过 + 各维度判定）
+- `timestamp`: 评测时间
+- `evaluator_model`: 评测模型
+
+---
+
+## Bad Case 分析
+
+> **注**: 当前测试用例均通过，暂无失败案例。  
+> **待补充**: 扩充用例后，整理典型失败案例及优化方案。
+
+---
+
+## 下一步计划
+
+| 优先级 | 任务 | 预计时间 |
+|--------|------|---------|
+| 🔥 高 | 收集 Bad Case 并分析 | 本周 |
+| 🔶 中 | 优化 Prompt 模板 | 下周 |
+| 🔶 中 | 扩展到其他评测场景 | 下周 |
+| 📅 低 | 开发 Web 可视化界面 | 后续 |
+
+---
+
+## 许可证
+
 本项目采用 MIT 许可证 - 详情见 [LICENSE](LICENSE) 文件。
 
 ---
 
-*Last updated: 2026-04-01*  
-*最后更新：2026-04-01*
-
-*⭐ If you find this learning journey interesting, please consider giving it a star!*  
-*⭐ 如果你觉得这个学习之旅有趣，请给个 Star！*
+*项目开始时间: 2026-03-25*  
+*最后更新: 2026-04-06*  
+*如果这个作品集对你有帮助，欢迎 Star ⭐*

@@ -319,7 +319,7 @@ cat templates/customer-service-evaluator.md
 **验证方法**：
 ```bash
 # 测试其他模型
-# 修改 config.py 中的 MODEL_UNDER_TEST
+# 修改 tools/model_config.py 中的 MODEL_UNDER_TEST
 ```
 
 **改进方案**：
@@ -396,14 +396,14 @@ echo "XX操作完整流程：步骤1-XX，步骤2-XX，步骤3-XX" >> knowledge_
 2. **调整温度参数**
 
 ```python
-# 修改 config.py
+# 修改 tools/model_config.py
 API_TEMPERATURE = 0.5  # 降低随机性（原值 0.7）
 ```
 
 3. **切换更强模型**
 
 ```python
-# 修改 config.py
+# 修改 tools/model_config.py
 MODEL_UNDER_TEST = "ernie-4.8-turbo-256k"  # 更强的模型
 ```
 

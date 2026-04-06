@@ -59,13 +59,19 @@ logs/
 *.csv
 *.json
 !package.json
+!projects/*/cases/*.json
 data/datasets/*
 !data/datasets/.gitkeep
 
 # Model outputs
 outputs/
-results/
 checkpoints/
+
+# Results - keep batch-006 as example
+projects/*/results/*
+!projects/*/results/batch-006*/
+!projects/*/results/batch-006*/*.json
+!projects/*/results/batch-006*/*.log
 
 # Temporary files
 tmp/
@@ -77,3 +83,6 @@ MY_JOURNEY.md
 archive/
 创建完成总结.md
 .codebuddy/
+
+# AI Skills (personal development tools)
+.trae/skills/apex-sage/
