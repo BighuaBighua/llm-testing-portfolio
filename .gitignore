@@ -70,3 +70,8 @@ checkpoints/
 tmp/
 temp/
 *.tmp
+
+# Project-specific files
+MY_JOURNEY.md
+archive/
+创建完成总结.md
