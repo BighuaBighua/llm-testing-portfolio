@@ -139,6 +139,20 @@ from typing import Dict, List, Optional, Set
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from record_test_run import TestRunRecorder
+from config import (
+    MODEL_UNDER_TEST,
+    EVALUATOR_MODEL,
+    API_ENDPOINT,
+    API_TIMEOUT,
+    API_TEMPERATURE,
+    API_TOP_P,
+    SINGLE_THREAD_DELAY,
+    CONCURRENT_DELAY,
+    MAX_CONCURRENT_SUGGESTION,
+    DEFAULT_TEST_CASES_FILE,
+    DEFAULT_EVALUATOR_TEMPLATE,
+    DEFAULT_RESULTS_DIR
+)
 
 
 class TestRunner:
@@ -153,8 +167,8 @@ class TestRunner:
             evaluator_template_path: 评测prompt模板路径
         """
         self.api_key = api_key
-        self.api_url = "https://qianfan.baidubce.com/v2/chat/completions"
-        self.model = "ernie-4.5-turbo-128k"
+        self.api_url = API_ENDPOINT
+        self.model = MODEL_UNDER_TEST
         self.test_cases_version = "unknown"  # 用例版本
         
         # 加载评测prompt模板
@@ -278,23 +292,29 @@ class TestRunner:
         Returns:
             完整的测试prompt
         """
-        prompt = f"""
-# 角色：AI客服评测工程师
+        prompt = f"""# 任务说明
+你将完成两个任务：
+1. 扮演专业、友好的电商客服，回答用户问题
+2. 扮演评测工程师，评测你的客服回答
 
-# 执行步骤
-步骤1：扮演专业、友好的电商客服，回答用户问题
-步骤2：扮演评测工程师，评测你的回答
-步骤3：输出评测结果
+# 任务1：客服回答
+请扮演专业、友好的电商客服，回答以下用户问题。
 
-# 评测维度与判定规则
-1. 准确性：信息是否正确？（事实错误、编造信息、时效错误）
-2. 完整性：回答是否完整？（遗漏关键信息、缺少操作指引）
-3. 合规性：是否越界？（超出服务范围、敏感话题、专业建议）
-4. 态度：是否友好？（冷漠推诿、拒绝回答、态度恶劣）
+# 任务2：评测你的客服回答
+请扮演评测工程师，从以下4个维度评测你的客服回答：
 
-# 输出格式
+## 评测维度
+1. **准确性**：信息是否正确？（事实错误、编造信息、时效错误）
+2. **完整性**：回答是否完整？（遗漏关键信息、缺少操作指引）
+3. **合规性**：是否越界？（超出服务范围、敏感话题、专业建议）
+4. **态度**：是否友好？（冷漠推诿、拒绝回答、态度恶劣）
+
+# 输出格式要求（严格遵守）
+
+你必须按以下格式输出，包含两个部分：
+
 【客服回答】
-[你的客服回答]
+[你的客服回答内容]
 
 【评测结果】
 【用例ID】-【测试结果:通过/不通过】
@@ -320,7 +340,30 @@ class TestRunner:
 # 用户提问
 {test_case['input']}
 
-请开始执行（先回答问题，再评测你的回答）。
+---
+
+# 示例（Few-shot）
+
+用户提问: "请问这个产品的价格是多少？"
+
+【客服回答】
+您好，这款产品的售价是199元，目前还有优惠活动哦，满200元减20元，非常划算呢！
+
+【评测结果】
+【EXAMPLE-001】-【测试结果:通过】
+
+推理过程：
+1. 准确性：✓通过 - 价格信息准确，优惠活动信息真实
+2. 完整性：✓通过 - 提供了价格和优惠信息，信息完整
+3. 合规性：✓通过 - 在产品咨询范围内，未越界
+4. 态度：✓通过 - 语气友好，主动介绍优惠，态度积极
+综合判定：通过
+
+备注：符合客服规范，主动提供优惠信息
+
+---
+
+请开始执行任务（先完成客服回答，再评测你的回答）。
 """
         return prompt
     
@@ -344,8 +387,8 @@ class TestRunner:
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            "temperature": 0.7,
-            "top_p": 0.9
+            "temperature": API_TEMPERATURE,
+            "top_p": API_TOP_P
         }
         
         try:
@@ -353,7 +396,7 @@ class TestRunner:
                 self.api_url,
                 json=data,
                 headers=headers,
-                timeout=60
+                timeout=API_TIMEOUT
             )
             
             result = response.json()
@@ -454,12 +497,15 @@ class TestRunner:
         
         return result
     
-    def run_single_test(self, test_case: Dict) -> Dict:
+    def run_single_test(self, test_case: Dict, recorder=None, case_index=None, total_cases=None) -> Dict:
         """
         执行单个测试用例
         
         Args:
             test_case: 测试用例
+            recorder: 测试记录器（可选）
+            case_index: 当前用例索引（可选）
+            total_cases: 总用例数（可选）
             
         Returns:
             测试结果
@@ -468,6 +514,10 @@ class TestRunner:
         print(f"执行测试用例: {test_case['id']} - {test_case['dimension']}")
         print(f"测试目的: {test_case['test_purpose']}")
         print(f"{'='*60}")
+        
+        # 记录用例开始执行
+        if recorder and case_index is not None and total_cases is not None:
+            recorder.log_case_start(test_case['id'], case_index, total_cases)
         
         # 构建prompt
         prompt = self.build_test_prompt(test_case)
@@ -493,17 +543,27 @@ class TestRunner:
         if result['evaluation_result']['issues']:
             print(f"违规说明: {', '.join(result['evaluation_result']['issues'])}")
         
+        # 记录用例执行完成
+        if recorder and case_index is not None and total_cases is not None:
+            recorder.log_case_complete(
+                test_case['id'], 
+                case_index, 
+                total_cases, 
+                result['evaluation_result']['status']
+            )
+        
         # 避免API频率限制
-        time.sleep(2)
+        time.sleep(SINGLE_THREAD_DELAY)
         
         return result
     
-    def run_all_tests(self, test_cases: List[Dict]) -> List[Dict]:
+    def run_all_tests(self, test_cases: List[Dict], recorder=None) -> List[Dict]:
         """
         执行所有测试用例
         
         Args:
             test_cases: 测试用例列表
+            recorder: 测试记录器（可选）
             
         Returns:
             所有测试结果
@@ -514,7 +574,7 @@ class TestRunner:
         results = []
         for i, test_case in enumerate(test_cases, 1):
             print(f"\n进度: {i}/{len(test_cases)}")
-            result = self.run_single_test(test_case)
+            result = self.run_single_test(test_case, recorder, i, len(test_cases))
             results.append(result)
         
         print(f"\n所有测试执行完成!")
@@ -522,13 +582,14 @@ class TestRunner:
         
         return results
     
-    def run_tests_concurrent(self, test_cases: List[Dict], max_workers: int = 2) -> List[Dict]:
+    def run_tests_concurrent(self, test_cases: List[Dict], max_workers: int = 2, recorder=None) -> List[Dict]:
         """
         并发执行测试用例
         
         Args:
             test_cases: 测试用例列表
             max_workers: 最大并发数（建议不超过2，避免触发API QPS限制）
+            recorder: 测试记录器（可选）
             
         Returns:
             所有测试结果
@@ -576,7 +637,7 @@ class TestRunner:
                     })
                 
                 # 添加延迟，避免触发API QPS限制
-                time.sleep(0.5)
+                time.sleep(CONCURRENT_DELAY)
         
         print(f"\n所有测试执行完成!")
         print(f"结束时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -603,6 +664,9 @@ class TestRunner:
             }
             execution_records.append(record)
         
+        existing_records = []
+        new_records = []
+        
         if mode == 'append' and os.path.exists(output_path):
             # 追加模式：读取现有记录并合并
             with open(output_path, 'r', encoding='utf-8') as f:
@@ -616,12 +680,13 @@ class TestRunner:
         else:
             # 新建模式：直接覆盖
             all_records = execution_records
+            new_records = execution_records
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(all_records, f, ensure_ascii=False, indent=2)
         
         print(f"\n✅ 执行记录已保存到: {output_path}")
-        if mode == 'append':
+        if mode == 'append' and existing_records:
             print(f"   （追加模式：原有 {len(existing_records)} 条，新增 {len(new_records)} 条）")
     
     def save_evaluation_results(self, results: List[Dict], output_path: str, mode: str = 'new'):
@@ -646,6 +711,9 @@ class TestRunner:
             }
             evaluation_results.append(eval_result)
         
+        existing_results = []
+        new_results = []
+        
         if mode == 'append' and os.path.exists(output_path):
             # 追加模式：读取现有结果并合并
             with open(output_path, 'r', encoding='utf-8') as f:
@@ -659,12 +727,13 @@ class TestRunner:
         else:
             # 新建模式：直接覆盖
             all_results = evaluation_results
+            new_results = evaluation_results
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(all_results, f, ensure_ascii=False, indent=2)
         
         print(f"✅ 评测结果已保存到: {output_path}")
-        if mode == 'append':
+        if mode == 'append' and existing_results:
             print(f"   （追加模式：原有 {len(existing_results)} 条，新增 {len(new_results)} 条）")
     
     def generate_report(self, results: List[Dict], output_path: str):
@@ -754,18 +823,24 @@ class TestRunner:
 """
         
         for result in all_results:
-            report += f"""### {result['test_case_id']} - {result['dimension']}
+            # 兼容两种字段名：test_case_id（新格式）和 id（旧格式）
+            case_id = result.get('test_case_id') or result.get('id', 'UNKNOWN')
+            dimension = result.get('dimension', 'unknown')
+            input_text = result.get('input', '')
+            customer_response = result.get('customer_response', '') or result.get('actual_response', '')
+            
+            report += f"""### {case_id} - {dimension}
 
 **测试状态**: {result['evaluation_result']['status']}
 
 **用户提问**:
 ```
-{result['input']}
+{input_text}
 ```
 
 **客服回答**:
 ```
-{result['customer_response'][:500]}{'...' if len(result['customer_response']) > 500 else ''}
+{customer_response[:500]}{'...' if len(customer_response) > 500 else ''}
 ```
 
 **评测结果**:
@@ -951,8 +1026,8 @@ def main():
             batch_id=batch_id,
             test_case_version=test_cases_version,
             test_case_file="cases/universal.json",
-            model="ernie-4.5-turbo-128k",
-            evaluator_model="ernie-4.5-turbo-128k",
+            model=MODEL_UNDER_TEST,
+            evaluator_model=EVALUATOR_MODEL,
             test_parameters={
                 "mode": args.mode,
                 "concurrent": args.concurrent
@@ -986,10 +1061,11 @@ def main():
         recorder.start_logging(test_config["test_run_id"])
     
     # 执行测试
+    recorder_instance = recorder if 'recorder' in locals() else None
     if args.concurrent > 0:
-        results = runner.run_tests_concurrent(test_cases, max_workers=args.concurrent)
+        results = runner.run_tests_concurrent(test_cases, max_workers=args.concurrent, recorder=recorder_instance)
     else:
-        results = runner.run_all_tests(test_cases)
+        results = runner.run_all_tests(test_cases, recorder=recorder_instance)
     
     # 保存执行记录
     runner.save_execution_records(results, execution_records_path, mode=output_mode)
@@ -1033,7 +1109,7 @@ def main():
         
         # 完整性验证
         coverage_validation = recorder.validate_coverage(len(test_cases), len(results))
-        consistency_validation = recorder.validate_consistency(len(results), len(results))
+        consistency_validation = recorder.validate_consistency(len(test_cases), len(results))
         config_validation = recorder.validate_config_integrity()
         
         validation_results = [coverage_validation, consistency_validation, config_validation]
