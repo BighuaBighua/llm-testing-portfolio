@@ -25,19 +25,17 @@
 llm-testing-portfolio/
 ├── docs/                           # 项目文档库
 │   ├── prompt-engineering-guide.md # Prompt 工程技术方案
-│   ├── roadmap.md                  # 学习路线图
-│   ├── architecture/               # 架构设计文档
-│   ├── technical-analysis/         # 技术分析文档
-│   └── user-guide/                 # 使用指南
+│   ├── bad-case-analysis.md        # Bad Case 分析报告
+│   ├── test-run-recorder-workflow.md # 测试运行记录工作流程
+│   ├── report-interpretation.md    # 测试报告解读指南
+│   └── interruption-recovery.md    # 中断恢复指南
 ├── projects/                       # 项目案例
 │   └── 01-ai-customer-service/     # AI 客服系统评测项目
 │       ├── cases/                  # 测试用例库
-│       │   ├── universal.json      # 通用评测用例（50条）
-│       │   ├── universal.md        # 用例说明文档
-│       │   └── customer-service.md # 用例设计文档
+│       │   ├── universal.json      # 通用评测用例
+│       │   └── universal.md        # 用例说明文档
 │       └── results/                # 测试结果（按批次存储）
-│           ├── batch-001_2026-04-05/
-│           └── batch-002_2026-04-05/
+│           └── batch-006_2026-04-06/
 ├── scripts/                        # 自动化脚本
 │   ├── run_tests.py               # 主入口：运行测试
 │   ├── generate_test_cases.py     # 入口：生成测试用例
@@ -46,6 +44,10 @@ llm-testing-portfolio/
 │       └── record_test_run.py     # 执行记录
 ├── templates/                      # Prompt 模板库
 │   └── customer-service-evaluator.md # AI客服评测器
+├── .env.example                    # 环境变量示例
+├── requirements.txt                # Python 依赖
+├── AI_CODING_RULES.md              # AI 编码规范
+├── LICENSE                         # MIT 许可证
 └── README.md                       # 本文件
 ```
 
