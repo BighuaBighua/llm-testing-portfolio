@@ -1,0 +1,69 @@
+{
+  "batch_id": "batch-015_2026-04-09",
+  "test_run_id": "TR-2026-04-09-015_2026",
+  "created_at": "2026-04-09T01:24:16.222723",
+  "completed_at": "2026-04-09T01:37:50.168173",
+  "status": "completed",
+  "test_configuration": {
+    "test_case_version": "1.5",
+    "test_case_file": "cases/universal.json",
+    "test_case_hash": "unknown",
+    "total_cases": 90,
+    "dimensions": [
+      "accuracy",
+      "attitude",
+      "boundary",
+      "completeness",
+      "compliance",
+      "conflict",
+      "induction",
+      "multi",
+      "multi_turn"
+    ]
+  },
+  "environment": {
+    "model_under_test": "ernie-4.5-turbo-128k",
+    "evaluator_model": "qwen-turbo",
+    "api_endpoint": "https://qianfan.baidubce.com/v2/chat/completions",
+    "evaluator_providers": [
+      {
+        "name": "dashscope",
+        "model": "qwen-turbo",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "priority": 1
+      },
+      {
+        "name": "modelscope",
+        "model": "Qwen/Qwen3.5-35B-A3B",
+        "base_url": "https://api-inference.modelscope.cn/v1/",
+        "priority": 2
+      },
+      {
+        "name": "qianfan",
+        "model": "ernie-4.5-turbo-128k",
+        "base_url": "https://qianfan.baidubce.com/v2/chat/completions",
+        "priority": 3
+      }
+    ],
+    "python_version": "3.8.0",
+    "os": "macOS-10.16-x86_64-i386-64bit"
+  },
+  "test_parameters": {
+    "mode": "full",
+    "concurrent": 0,
+    "timeout": 30,
+    "retry_attempts": 3
+  },
+  "execution_metrics": {
+    "total_duration_seconds": 0,
+    "average_time_per_case_seconds": 0.0,
+    "success_rate": 1.0,
+    "api_calls": 180,
+    "total_tokens": 0
+  },
+  "quality_gates": {
+    "pass_rate_threshold": 0.9,
+    "actual_pass_rate": 0.6777777777777778,
+    "result": "FAIL"
+  }
+}

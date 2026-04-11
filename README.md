@@ -36,15 +36,19 @@ llm-testing-portfolio/
 │       │   └── universal.md        # 用例说明文档
 │       └── results/                # 测试结果（按批次存储）
 │           └── batch-006_2026-04-06/
+├── configs/                        # 配置中心
+│   ├── business_rules.yaml         # 业务规则配置
+│   ├── test_generation_config.yaml # 测试生成配置
+│   └── api_config_example.yaml     # API 配置模板（示例文件）
 ├── scripts/                        # 自动化脚本
 │   ├── run_tests.py               # 主入口：运行测试
 │   ├── generate_test_cases.py     # 入口：生成测试用例
 │   └── tools/                     # 辅助模块
 │       ├── model_config.py        # 配置管理
+│       ├── config_loader.py       # 配置加载器
 │       └── record_test_run.py     # 执行记录
 ├── templates/                      # Prompt 模板库
 │   └── customer-service-evaluator.md # AI客服评测器
-├── .env.example                    # 环境变量示例
 ├── requirements.txt                # Python 依赖
 ├── AI_CODING_RULES.md              # AI 编码规范
 ├── LICENSE                         # MIT 许可证
@@ -66,16 +70,28 @@ git clone https://gitee.com/fangfang007/llm-testing-portfolio
 cd llm-testing-portfolio
 
 # 2. 配置 API Key
-cp .env.example .env
-# 编辑 .env 文件，填入你的文心一言 API Key
-# 如何获取 API Key：
-# 1. 访问百度智能云控制台：https://console.bce.baidu.com/qianfan/
-# 2. 创建应用，获取 API Key 和 Secret Key
-# 3. 将 QIANFAN_AK 和 QIANFAN_SK 替换为你的实际值
+cp configs/api_config_example.yaml configs/api_config.yaml
+# 编辑 configs/api_config_local.yaml 文件，填入你的 API 密钥
 
 # 3. 安装依赖
 pip install -r requirements.txt
 ```
+
+### 如何配置 API Key
+
+1. **复制配置模板**：`cp configs/api_config_example.yaml configs/api_config.yaml`
+2. **编辑本地配置**：在 `configs/api_config.yaml` 文件中，将占位符替换为你的实际 API 密钥：
+   - `qianfan.ak`: 百度千帆 Access Key
+   - `qianfan.sk`: 百度千帆 Secret Key
+   - `dashscope.api_key`: 阿里云 DashScope API Key
+   - `modelscope.api_key`: 魔搭社区 API Key
+
+3. **获取 API Key**：
+   - **百度千帆**：访问 [百度智能云控制台](https://console.bce.baidu.com/qianfan/)
+   - **阿里云 DashScope**：访问 [阿里云 DashScope 控制台](https://dashscope.console.aliyun.com/)
+   - **魔搭社区**：访问 [魔搭社区控制台](https://modelscope.cn/)
+
+**安全提示**：`configs/api_config_local.yaml` 文件已被 `.gitignore` 保护，不会被提交到版本控制系统。
 
 ### 运行测试
 
@@ -97,6 +113,28 @@ cat results/batch-*/summary.md
 ```
 
 ---
+
+## 配置系统
+
+### 安全配置机制
+
+项目采用双重配置文件机制确保 API 密钥安全：
+
+- **示例模板** (`configs/api_config_example.yaml`)：包含占位符，可安全提交到 Git
+- **实际配置** (`configs/api_config.yaml`)：包含真实密钥，被 `.gitignore` 保护
+
+### 配置加载顺序
+
+配置加载器按以下优先级加载配置：
+1. 优先加载 `configs/api_config.yaml`（实际配置，包含真实密钥）
+2. 如果不存在，加载 `configs/api_config_example.yaml`（示例模板，占位符）
+3. 如果都不存在，使用空配置（兼容性）
+
+### 支持的 API 提供商
+
+- **百度千帆**：主要测试对象，用于生成 AI 客服回复
+- **阿里云 DashScope**：主要评测模型，用于评估 AI 客服回复质量
+- **魔搭社区**：备用评测模型，用于对比验证
 
 ## 自动化脚本
 
@@ -211,9 +249,49 @@ python3 generate_test_cases.py --dimensions boundary,conflict,induction --append
 | `compliance` | 合规性维度 | 基础维度 |
 | `attitude` | 态度维度 | 基础维度 |
 | `multi` | 多维度组合 | 基础维度 |
-| `boundary` | 边界场景（模糊问题、多轮对话、越界请求） | 新增 ✨ |
+| `boundary` | 边界场景（模糊问题、越界请求） | 新增 ✨ |
 | `conflict` | 多维度冲突场景（准确性vs态度、完整性vs合规性） | 新增 ✨ |
 | `induction` | 诱导场景（诱导说谎、诱导提供专业建议、诱导泄露隐私） | 新增 ✨ |
+| `multi_turn` | 多轮对话（10种场景，3-6轮对话） | 新增 ✨ |
+
+**多轮对话维度（multi_turn）**:
+
+多轮对话测试覆盖10种典型场景，每种场景生成1条用例（共10条），评测采用4子任务分步校验：
+
+| 场景 | 说明 | 对话轮数 |
+|------|------|----------|
+| 渐进式需求澄清 | 用户需求模糊，AI逐步引导澄清 | 3-4轮 |
+| 上下文追问链 | 用户对同一主题层层追问 | 3-4轮 |
+| 信息提交与修改 | 用户提供信息后中途修改 | 4-5轮 |
+| 纠错澄清 | AI误解用户意图，用户澄清 | 3-4轮 |
+| 跨主题切换 | 用户跳跃式提问不同主题 | 4-6轮 |
+| 条件筛选 | 用户逐步添加筛选条件 | 4-6轮 |
+| 方案比较 | 用户对比多个方案，逐步深入 | 4-5轮 |
+| 问题诊断 | AI通过逐步询问诊断问题原因 | 4-5轮 |
+| 流程指导 | 用户逐步学习某个操作流程 | 3-5轮 |
+| 记忆验证 | 用户测试AI是否记住前文信息 | 3-4轮 |
+
+多轮评测4子任务：
+1. 子任务1：逐轮单轮质量校验（准确性/完整性/合规性/态度）
+2. 子任务2：上下文一致性校验（前后矛盾/遗忘/幻觉）
+3. 子任务3：指令坚守性校验（是非判断：守了/没守）
+4. 子任务4：规则稳定性校验（趋势判断：稳/不稳）
+
+**多轮对话使用示例**:
+
+```bash
+# 生成多轮对话用例（追加到现有用例文件）
+python3 generate_test_cases.py --dimensions multi_turn --append
+
+# 执行单条多轮对话用例
+python3 run_tests.py --mode selected --cases TC-MTD-001
+
+# 执行多条多轮对话用例
+python3 run_tests.py --mode selected --cases TC-MTD-001,TC-MTD-007
+
+# 执行所有用例（含多轮对话，共90条）
+python3 run_tests.py --mode full
+```
 
 ---
 
@@ -340,7 +418,7 @@ python run_tests.py  # 运行测试用例
 
 ## Bad Case 分析
 
-> **注**: 当前测试用例均通过，暂无失败案例。  
+> **注**: 当前测试用例均通过，暂无失败案例。
 > **待补充**: 扩充用例后，整理典型失败案例及优化方案。
 
 ---
@@ -362,6 +440,6 @@ python run_tests.py  # 运行测试用例
 
 ---
 
-*项目开始时间: 2026-03-25*  
-*最后更新: 2026-04-06*  
+*项目开始时间: 2026-03-25*
+*最后更新: 2026-04-06*
 *如果这个作品集对你有帮助，欢迎 Star ⭐*

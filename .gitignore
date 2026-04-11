@@ -51,6 +51,12 @@ htmlcov/
 *.env
 !.env.example
 
+# Local API configuration files
+configs/api_config.yaml
+configs/*_local.yaml
+configs/api/api_config.yaml
+configs/api/*_local.yaml
+
 # Logs
 *.log
 logs/
@@ -67,11 +73,19 @@ data/datasets/*
 outputs/
 checkpoints/
 
-# Results - keep batch-006 as example
+# Results - keep batch-006 and batch-015 as examples
 projects/*/results/*
 !projects/*/results/batch-006*/
 !projects/*/results/batch-006*/*.json
 !projects/*/results/batch-006*/*.log
+!projects/*/results/batch-015*/
+!projects/*/results/batch-015*/*.json
+!projects/*/results/batch-015*/*.log
+!projects/*/results/batch-015*/*.md
+
+# Bad Case tracking files
+!projects/*/cases/bad_cases/*.json
+!projects/*/cases/bad_cases/*.md
 
 # Temporary files
 tmp/
@@ -83,6 +97,12 @@ MY_JOURNEY.md
 archive/
 创建完成总结.md
 .codebuddy/
+.lingma/
+LEARNING_DOC.md
+ARCHITECTURE_DEEP_DIVE.md
+
+# Trae AI assistant files
+.trae/
 
 # AI Skills (personal development tools)
 .trae/skills/apex-sage/
