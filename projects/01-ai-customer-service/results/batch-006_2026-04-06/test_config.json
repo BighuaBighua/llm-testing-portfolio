@@ -23,7 +23,7 @@
   "environment": {
     "model_under_test": "ernie-4.5-turbo-128k",
     "evaluator_model": "ernie-4.5-turbo-128k",
-    "api_endpoint": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat",
+    "api_endpoint": "***REDACTED***",
     "python_version": "3.8.0",
     "os": "macOS-10.16-x86_64-i386-64bit"
   },

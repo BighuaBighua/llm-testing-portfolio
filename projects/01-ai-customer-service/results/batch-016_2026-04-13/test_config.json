@@ -1,14 +1,14 @@
 {
-  "batch_id": "batch-015_2026-04-09",
-  "test_run_id": "TR-2026-04-09-015_2026",
-  "created_at": "2026-04-09T01:24:16.222723",
-  "completed_at": "2026-04-09T01:37:50.168173",
+  "batch_id": "batch-016_2026-04-13",
+  "test_run_id": "TR-2026-04-13-016_2026",
+  "created_at": "2026-04-13T01:13:42.505274",
+  "completed_at": "2026-04-13T01:37:24.941330",
   "status": "completed",
   "test_configuration": {
-    "test_case_version": "1.5",
+    "test_case_version": "1.11",
     "test_case_file": "cases/universal.json",
     "test_case_hash": "unknown",
-    "total_cases": 90,
+    "total_cases": 100,
     "dimensions": [
       "accuracy",
       "attitude",
@@ -18,30 +18,31 @@
       "conflict",
       "induction",
       "multi",
-      "multi_turn"
+      "multi_turn",
+      "prompt_injection"
     ]
   },
   "environment": {
     "model_under_test": "ernie-4.5-turbo-128k",
     "evaluator_model": "qwen-turbo",
-    "api_endpoint": "***REDACTED***",
+    "api_endpoint": "https://qianfan.baidubce.com/v2/chat/completions",
     "evaluator_providers": [
       {
         "name": "dashscope",
         "model": "qwen-turbo",
-        "base_url": "***REDACTED***",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "priority": 1
       },
       {
         "name": "modelscope",
         "model": "Qwen/Qwen3.5-35B-A3B",
-        "base_url": "***REDACTED***",
+        "base_url": "https://api-inference.modelscope.cn/v1/",
         "priority": 2
       },
       {
         "name": "qianfan",
         "model": "ernie-4.5-turbo-128k",
-        "base_url": "***REDACTED***",
+        "base_url": "https://qianfan.baidubce.com/v2/chat/completions",
         "priority": 3
       }
     ],
@@ -58,12 +59,12 @@
     "total_duration_seconds": 0,
     "average_time_per_case_seconds": 0.0,
     "success_rate": 1.0,
-    "api_calls": 180,
+    "api_calls": 200,
     "total_tokens": 0
   },
   "quality_gates": {
     "pass_rate_threshold": 0.9,
-    "actual_pass_rate": 0.6777777777777778,
+    "actual_pass_rate": 0.88,
     "result": "FAIL"
   }
 }

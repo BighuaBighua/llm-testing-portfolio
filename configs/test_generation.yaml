@@ -12,12 +12,12 @@ dimensions:
     description: "AI回复是否准确"
   completeness:
     count: 10
-    code: "COM"
+    code: "CMP"
     name_cn: "完整性"
     description: "AI回复是否完整"
   compliance:
     count: 10
-    code: "CMP"
+    code: "CPM"
     name_cn: "合规性"
     description: "AI回复是否合规"
   attitude:
@@ -45,6 +45,11 @@ dimensions:
     code: "IND"
     name_cn: "诱导场景"
     description: "测试AI是否能识别并拒绝诱导性问题"
+  multi_turn:
+    count: 10
+    code: "MTD"
+    name_cn: "多轮对话"
+    description: "逐轮校验4大维度 + 上下文一致性 + 指令坚守性 + 规则稳定性"
   prompt_injection:
     count: 10
     code: "PIN"
@@ -79,11 +84,81 @@ generation_settings:
   max_retries: 2
 
 # ==================== 多轮对话场景 ====================
-multi_turn_scenarios: []
+multi_turn_scenarios:
+  - key: "progressive_clarification"
+    name_cn: "渐进式需求澄清"
+    description: "用户需求模糊，AI逐步引导澄清（3-4轮）"
+    example_turns: 4
+  - key: "context_follow_up"
+    name_cn: "上下文追问链"
+    description: "用户对同一主题层层追问（3-4轮）"
+    example_turns: 4
+  - key: "info_submission_modify"
+    name_cn: "信息提交与修改"
+    description: "用户提供信息后，中途修改（4-5轮）"
+    example_turns: 5
+  - key: "correction_clarification"
+    name_cn: "纠错澄清"
+    description: "AI误解用户意图，用户澄清（3-4轮）"
+    example_turns: 4
+  - key: "topic_switching"
+    name_cn: "跨主题切换"
+    description: "用户跳跃式提问不同主题（4-6轮）"
+    example_turns: 5
+  - key: "conditional_filtering"
+    name_cn: "条件筛选"
+    description: "用户逐步添加筛选条件（4-6轮）"
+    example_turns: 5
+  - key: "solution_comparison"
+    name_cn: "方案比较"
+    description: "用户对比多个方案，逐步深入（4-5轮）"
+    example_turns: 4
+  - key: "problem_diagnosis"
+    name_cn: "问题诊断"
+    description: "AI逐步排查用户问题原因（4-5轮）"
+    example_turns: 5
+  - key: "process_guidance"
+    name_cn: "流程指导"
+    description: "用户逐步学习某个操作流程（3-5轮）"
+    example_turns: 4
+  - key: "memory_verification"
+    name_cn: "记忆验证"
+    description: "用户测试AI是否记住前文信息（3-4轮）"
+    example_turns: 4
 
-# ==================== 评测规则 ====================
+# ==================== 评测规则（待定义） ====================
 evaluation_rules: {}
 
 # ==================== 评测设置 ====================
 evaluation_settings:
   injection_independence_policy: "strict"
+
+# ==================== CSV导出配置 ====================
+csv_export_config:
+  encoding: "utf-8-sig"
+  base_fields:
+    - name: "id"
+      header_cn: "用例ID"
+    - name: "dimension"
+      header_cn: "评测维度"
+    - name: "dimension_cn"
+      header_cn: "维度中文名"
+    - name: "input"
+      header_cn: "用户提问"
+    - name: "test_purpose"
+      header_cn: "测试目的"
+    - name: "quality_criteria"
+      header_cn: "质量标准"
+    - name: "scenario_type"
+      header_cn: "场景类型"
+    - name: "scenario_type_cn"
+      header_cn: "场景类型中文名"
+    - name: "turn_count"
+      header_cn: "对话轮数"
+    - name: "conversation"
+      header_cn: "对话流程"
+  prompt_injection_fields:
+    - name: "attack_type"
+      header_cn: "攻击手法"
+    - name: "attack_type_cn"
+      header_cn: "攻击手法中文名"

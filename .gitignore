@@ -54,22 +54,17 @@ htmlcov/
 # Local API configuration files
 configs/api_config.yaml
 configs/*_local.yaml
-configs/api/api_config.yaml
-configs/api/*_local.yaml
 
 # Logs
 *.log
 logs/
 
-# Results - keep batch-006 and batch-015 as examples
+# Results - keep batch-016 as example
 projects/*/results/*
-!projects/*/results/batch-006*/
-!projects/*/results/batch-006*/*.json
-!projects/*/results/batch-006*/*.log
-!projects/*/results/batch-015*/
-!projects/*/results/batch-015*/*.json
-!projects/*/results/batch-015*/*.log
-!projects/*/results/batch-015*/*.md
+!projects/*/results/batch-016*/
+!projects/*/results/batch-016*/*.json
+!projects/*/results/batch-016*/*.md
+!projects/*/results/batch-016*/*.csv
 
 # Bad Case tracking files
 !projects/*/cases/bad_cases/*.json
@@ -80,8 +75,14 @@ tmp/
 temp/
 *.tmp
 
-# AI Assistant tools (个人开发工具，不提交到 GitHub)
+# Editor and tool configs
 .codebuddy/
 .lingma/
 .trae/
-archive/
+CLAUDE.md
+
+# Internal planning docs
+knowledge-base/superpowers/
+
+# Documentation
+docs/

@@ -1,5 +1,4 @@
 # LLM Testing Portfolio - Python Dependencies
-# 大模型测试作品集 - Python 依赖
 
 # Core dependencies
 python-dotenv>=1.0.0
@@ -9,18 +8,8 @@ pytest>=7.4.0
 pytest-cov>=4.1.0
 pytest-asyncio>=0.21.0
 
-# LLM API clients (will be used in later projects)
+# LLM API clients
 openai>=1.0.0
-anthropic>=0.18.0
-
-# Data processing
-pandas>=2.0.0
-numpy>=1.24.0
-
-# Evaluation metrics
-nltk>=3.8.0
-rouge-score>=0.1.2
-sacrebleu>=2.3.0
 
 # Configuration
 pyyaml>=6.0
@@ -33,7 +22,3 @@ tqdm>=4.66.0
 black>=23.0.0
 flake8>=6.1.0
 mypy>=1.5.0
-
-# Jupyter notebooks (for experiments)
-jupyter>=1.0.0
-ipykernel>=6.25.0

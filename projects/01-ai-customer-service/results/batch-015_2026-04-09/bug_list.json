@@ -62,7 +62,7 @@
   {
     "bug_id": "BUG-003",
     "severity": "P1",
-    "title": "准确性 - 准确性-信息不完整-未直接回答设备列表；完整性-信息不完整-",
+    "title": "准确性 - 准确性-信息不完整-未直接回答设备列表；完整性-信息不完整-未提供所需信息",
     "source_test_case_id": "TC-ACC-004",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "accuracy",
@@ -92,7 +92,7 @@
   {
     "bug_id": "BUG-004",
     "severity": "P1",
-    "title": "准确性 - 准确性-信息不准确-未直接回答覆盖地区；完整性-信息不完整-",
+    "title": "准确性 - 准确性-信息不准确-未直接回答覆盖地区；完整性-信息不完整-未提供具体覆盖范围",
     "source_test_case_id": "TC-ACC-005",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "accuracy",
@@ -122,7 +122,7 @@
   {
     "bug_id": "BUG-005",
     "severity": "P1",
-    "title": "准确性 - 准确性-模糊应答-未提供具体操作结果；完整性-信息不完整-未",
+    "title": "准确性 - 准确性-模糊应答-未提供具体操作结果；完整性-信息不完整-未直接回答用户问题",
     "source_test_case_id": "TC-ACC-007",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "accuracy",
@@ -182,7 +182,7 @@
   {
     "bug_id": "BUG-007",
     "severity": "P1",
-    "title": "准确性 - 准确性-信息不准确-未直接说明XX功能作用；完整性-信息不完",
+    "title": "准确性 - 准确性-信息不准确-未直接说明XX功能作用；完整性-信息不完整-未直接回答问题",
     "source_test_case_id": "TC-ACC-009",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "accuracy",
@@ -212,7 +212,7 @@
   {
     "bug_id": "BUG-008",
     "severity": "P1",
-    "title": "准确性 - 准确性-编造信息-未基于知识库提供XX服务适用范围；完整性-",
+    "title": "准确性 - 准确性-编造信息-未基于知识库提供XX服务适用范围；完整性-信息不完整-未直接回答用户问题",
     "source_test_case_id": "TC-ACC-010",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "accuracy",
@@ -512,11 +512,11 @@
   {
     "bug_id": "BUG-018",
     "severity": "P1",
-    "title": "boundary - 边界场景-未识别矛盾-未指出用户请求自相矛盾；完整性-信息不",
+    "title": "边界场景 - 边界场景-未识别矛盾-未指出用户请求自相矛盾；完整性-信息不完整-未说明无法执行的原因",
     "source_test_case_id": "TC-BOU-008",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "boundary",
-    "dimension_cn": "boundary",
+    "dimension_cn": "边界场景",
     "reproduce_steps": [
       {
         "step": 1,
@@ -542,11 +542,11 @@
   {
     "bug_id": "BUG-019",
     "severity": "P1",
-    "title": "boundary - 边界场景-未识别边界-未明确说明自身能力限制，暗示可提供非本",
+    "title": "边界场景 - 边界场景-未识别边界-未明确说明自身能力限制，暗示可提供非本服务范围的信息",
     "source_test_case_id": "TC-BOU-010",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "boundary",
-    "dimension_cn": "boundary",
+    "dimension_cn": "边界场景",
     "reproduce_steps": [
       {
         "step": 1,
@@ -572,11 +572,11 @@
   {
     "bug_id": "BUG-020",
     "severity": "P1",
-    "title": "conflict - 多维度冲突-处理失衡-未坚持准确性原则，回避用户质疑",
+    "title": "多维度冲突 - 多维度冲突-处理失衡-未坚持准确性原则，回避用户质疑",
     "source_test_case_id": "TC-CFL-002",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "conflict",
-    "dimension_cn": "conflict",
+    "dimension_cn": "多维度冲突",
     "reproduce_steps": [
       {
         "step": 1,
@@ -602,11 +602,11 @@
   {
     "bug_id": "BUG-021",
     "severity": "P1",
-    "title": "conflict - 完整性-信息不完整-未提供关键步骤；多维度冲突-处理失衡-为",
+    "title": "多维度冲突 - 完整性-信息不完整-未提供关键步骤；多维度冲突-处理失衡-为迎合简化要求而牺牲了必要信息完整性",
     "source_test_case_id": "TC-CFL-007",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "conflict",
-    "dimension_cn": "conflict",
+    "dimension_cn": "多维度冲突",
     "reproduce_steps": [
       {
         "step": 1,
@@ -632,11 +632,11 @@
   {
     "bug_id": "BUG-022",
     "severity": "P1",
-    "title": "conflict - 态度-推诿拒绝-未直接回答用户问题；多维度冲突-处理失衡-未",
+    "title": "多维度冲突 - 态度-推诿拒绝-未直接回答用户问题；多维度冲突-处理失衡-未在准确性与态度之间合理权衡",
     "source_test_case_id": "TC-CFL-008",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "conflict",
-    "dimension_cn": "conflict",
+    "dimension_cn": "多维度冲突",
     "reproduce_steps": [
       {
         "step": 1,
@@ -662,7 +662,7 @@
   {
     "bug_id": "BUG-023",
     "severity": "P1",
-    "title": "多轮对话 - 无",
+    "title": "多轮对话 - 待分析",
     "source_test_case_id": "TC-MTD-002",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "multi_turn",
@@ -701,16 +701,14 @@
       "api_provider": "dashscope",
       "test_case_version": "1.5"
     },
-    "issues": [
-      "无"
-    ],
+    "issues": [],
     "status": "open",
     "created_at": "2026-04-09"
   },
   {
     "bug_id": "BUG-024",
     "severity": "P1",
-    "title": "多轮对话 - 完整性-信息不完整-未准确记录和整合用户提供的所有信息；上下",
+    "title": "多轮对话 - 完整性-信息不完整-未准确记录和整合用户提供的所有信息；上下文一致性-信息遗漏-未明确确认修改和新增内容的具体场景；规则稳定性-规则松弛-信息处理能力随对话轮次下降",
     "source_test_case_id": "TC-MTD-003",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "multi_turn",
@@ -764,7 +762,7 @@
   {
     "bug_id": "BUG-025",
     "severity": "P1",
-    "title": "多轮对话 - 完整性-信息不完整-未能准确理解用户需求；上下文一致性-信息",
+    "title": "多轮对话 - 完整性-信息不完整-未能准确理解用户需求；上下文一致性-信息重复-未有效确认用户最终需求",
     "source_test_case_id": "TC-MTD-004",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "multi_turn",
@@ -812,7 +810,7 @@
   {
     "bug_id": "BUG-026",
     "severity": "P1",
-    "title": "多轮对话 - 完整性-信息不完整-未追踪前文提到的“文件”概念；上下文一致",
+    "title": "多轮对话 - 完整性-信息不完整-未追踪前文提到的“文件”概念；上下文一致性-信息遗忘-未回应“文件保存期限”与“XX操作”的关联",
     "source_test_case_id": "TC-MTD-005",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "multi_turn",
@@ -866,7 +864,7 @@
   {
     "bug_id": "BUG-027",
     "severity": "P1",
-    "title": "多轮对话 - 完整性-信息不完整-未整合所有筛选条件并返回结果；多轮对话-",
+    "title": "多轮对话 - 完整性-信息不完整-未整合所有筛选条件并返回结果；多轮对话-上下文一致性错误-未能整合用户提供的筛选条件",
     "source_test_case_id": "TC-MTD-006",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "multi_turn",
@@ -920,7 +918,7 @@
   {
     "bug_id": "BUG-028",
     "severity": "P1",
-    "title": "多轮对话 - 完整性-信息不完整-未在用户明确材料准备后提供具体操作指引；",
+    "title": "多轮对话 - 完整性-信息不完整-未在用户明确材料准备后提供具体操作指引；上下文一致性-逻辑不一致-前后指导策略不统一",
     "source_test_case_id": "TC-MTD-009",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "multi_turn",
@@ -968,7 +966,7 @@
   {
     "bug_id": "BUG-029",
     "severity": "P1",
-    "title": "多轮对话 - 完整性-信息不完整-未获取流程名称导致无法准确回答；多轮上下",
+    "title": "多轮对话 - 完整性-信息不完整-未获取流程名称导致无法准确回答；多轮上下文一致性-信息缺失-未记忆用户提及的“XX流程”并持续追问",
     "source_test_case_id": "TC-MTD-010",
     "source_batch_id": "batch-015_2026-04-09",
     "dimension": "multi_turn",

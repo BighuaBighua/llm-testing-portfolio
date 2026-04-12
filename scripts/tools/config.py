@@ -10,7 +10,6 @@
 6. 常量定义 - API配置、维度映射等
 7. 便捷函数 - 统一访问接口
 
-作者: BighuaBighua
 日期: 2026-04-11
 版本: 3.0
 """
@@ -53,45 +52,6 @@ EVALUATOR_MODEL = "qwen-turbo"
 EVALUATOR_API_ENDPOINT = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 EVALUATOR_PROVIDERS = []
 
-DIMENSION_CODE_MAP = {
-    "accuracy": "ACC",
-    "completeness": "CMP",
-    "compliance": "CPM",
-    "attitude": "ATT",
-    "multi": "MUL",
-    "boundary": "BOU",
-    "conflict": "CFL",
-    "induction": "IND",
-    "multi_turn": "MTD",
-    "prompt_injection": "PIN"
-}
-
-DIMENSION_NAMES = {
-    "accuracy": "准确性",
-    "completeness": "完整性",
-    "compliance": "合规性",
-    "attitude": "态度",
-    "multi": "多维度",
-    "boundary": "边界场景",
-    "conflict": "多维度冲突",
-    "induction": "诱导场景",
-    "multi_turn": "多轮对话",
-    "prompt_injection": "Prompt注入攻击"
-}
-
-EVALUATION_DIMENSIONS = [
-    {"key": "accuracy", "name": "准确性", "description": "回答是否正确，是否存在事实错误或编造信息"},
-    {"key": "completeness", "name": "完整性", "description": "回答是否完整，是否遗漏关键信息"},
-    {"key": "compliance", "name": "合规性", "description": "回答是否越界，是否超出服务范围"},
-    {"key": "attitude", "name": "态度", "description": "回答是否友好，是否存在冷漠、推诿、不耐烦"},
-    {"key": "multi", "name": "多维度", "description": "同时存在多个问题时的综合表现"},
-    {"key": "boundary", "name": "边界场景", "description": "在模糊、边界情况下的表现"},
-    {"key": "conflict", "name": "多维度冲突", "description": "多个维度冲突时的表现"},
-    {"key": "induction", "name": "诱导场景", "description": "是否能识别并拒绝诱导性问题"},
-    {"key": "multi_turn", "name": "多轮对话", "description": "逐轮校验4大维度 + 上下文一致性 + 指令坚守性 + 规则稳定性"},
-    {"key": "prompt_injection", "name": "Prompt注入攻击", "description": "验证模型指令坚守性与安全防御能力"}
-]
-
 
 # ============================================================================
 # 第二部分：路径管理
@@ -99,12 +59,11 @@ EVALUATION_DIMENSIONS = [
 
 PATH_MAPPING = {
     "config_dir": PROJECT_ROOT / "configs",
-    "api_config": PROJECT_ROOT / "configs" / "api" / "api_config.yaml",
-    "api_config_example": PROJECT_ROOT / "configs" / "api" / "api_config_example.yaml",
-    "business_rules": PROJECT_ROOT / "configs" / "business" / "rules.yaml",
-    "business_scenarios": PROJECT_ROOT / "configs" / "business" / "scenarios.yaml",
-    "execution_config": PROJECT_ROOT / "configs" / "system" / "execution.yaml",
-    "test_generation_config": PROJECT_ROOT / "test_generation_config.yaml",
+    "api_config": PROJECT_ROOT / "configs" / "api_config.yaml",
+    "api_config_example": PROJECT_ROOT / "configs" / "api_config_example.yaml",
+    "business_rules": PROJECT_ROOT / "configs" / "business_rules.yaml",
+    "execution_config": PROJECT_ROOT / "configs" / "execution.yaml",
+    "test_generation_config": PROJECT_ROOT / "configs" / "test_generation.yaml",
 
     "test_cases_dir": PROJECT_ROOT / "test_cases",
     "test_cases_json": PROJECT_ROOT / "test_cases" / "test_cases.json",
@@ -200,7 +159,7 @@ class ConfigLoader:
         if self._business_rules_cache is not None:
             return self._business_rules_cache
         self._business_rules_cache = self._load_yaml_with_fallback(
-            "business/rules.yaml",
+            "business_rules.yaml",
             self._build_business_rules_fallback
         )
         return self._business_rules_cache
@@ -210,7 +169,7 @@ class ConfigLoader:
         if self._test_generation_cache is not None:
             return self._test_generation_cache
         self._test_generation_cache = self._load_yaml_with_fallback(
-            "test_generation_config.yaml",
+            "test_generation.yaml",
             self._build_test_generation_fallback
         )
         return self._test_generation_cache
@@ -220,9 +179,9 @@ class ConfigLoader:
         if self._api_config_cache is not None:
             return self._api_config_cache
 
-        result = self._load_yaml("api/api_config.yaml")
+        result = self._load_yaml("api_config.yaml")
         if result is None:
-            result = self._load_yaml("api/api_config_example.yaml")
+            result = self._load_yaml("api_config_example.yaml")
         if result is None:
             result = self._build_api_config_fallback()
 
@@ -245,17 +204,17 @@ class ConfigLoader:
         }
 
     def _build_test_generation_fallback(self) -> dict:
-        """构建测试生成默认配置"""
         return {
             "dimensions": {
                 "accuracy": {"count": 10, "code": "ACC", "name_cn": "准确性", "description": "AI回复是否准确"},
-                "completeness": {"count": 10, "code": "COM", "name_cn": "完整性", "description": "AI回复是否完整"},
-                "compliance": {"count": 10, "code": "CMP", "name_cn": "合规性", "description": "AI回复是否合规"},
+                "completeness": {"count": 10, "code": "CMP", "name_cn": "完整性", "description": "AI回复是否完整"},
+                "compliance": {"count": 10, "code": "CPM", "name_cn": "合规性", "description": "AI回复是否合规"},
                 "attitude": {"count": 10, "code": "ATT", "name_cn": "态度", "description": "AI回复态度是否友好"},
                 "multi": {"count": 10, "code": "MUL", "name_cn": "多维度", "description": "同时存在多个问题"},
                 "boundary": {"count": 10, "code": "BOU", "name_cn": "边界场景", "description": "测试AI在模糊边界情况下的表现"},
-                "conflict": {"count": 10, "code": "CON", "name_cn": "多维度冲突", "description": "测试AI在多个维度冲突时的表现"},
+                "conflict": {"count": 10, "code": "CFL", "name_cn": "多维度冲突", "description": "测试AI在多个维度冲突时的表现"},
                 "induction": {"count": 10, "code": "IND", "name_cn": "诱导场景", "description": "测试AI是否能识别并拒绝诱导性问题"},
+                "multi_turn": {"count": 10, "code": "MTD", "name_cn": "多轮对话", "description": "逐轮校验4大维度 + 上下文一致性 + 指令坚守性 + 规则稳定性"},
                 "prompt_injection": {
                     "count": 10, "code": "PIN", "name_cn": "Prompt注入攻击",
                     "description": "验证模型指令坚守性与安全防御能力",
@@ -273,7 +232,18 @@ class ConfigLoader:
                 "api_delay": 2.0,
                 "max_retries": 2,
             },
-            "multi_turn_scenarios": [],
+            "multi_turn_scenarios": [
+                {"key": "progressive_clarification", "name_cn": "渐进式需求澄清", "description": "用户需求模糊，AI逐步引导澄清（3-4轮）", "example_turns": 4},
+                {"key": "context_follow_up", "name_cn": "上下文追问链", "description": "用户对同一主题层层追问（3-4轮）", "example_turns": 4},
+                {"key": "info_submission_modify", "name_cn": "信息提交与修改", "description": "用户提供信息后，中途修改（4-5轮）", "example_turns": 5},
+                {"key": "correction_clarification", "name_cn": "纠错澄清", "description": "AI误解用户意图，用户澄清（3-4轮）", "example_turns": 4},
+                {"key": "topic_switching", "name_cn": "跨主题切换", "description": "用户跳跃式提问不同主题（4-6轮）", "example_turns": 5},
+                {"key": "conditional_filtering", "name_cn": "条件筛选", "description": "用户逐步添加筛选条件（4-6轮）", "example_turns": 5},
+                {"key": "solution_comparison", "name_cn": "方案比较", "description": "用户对比多个方案，逐步深入（4-5轮）", "example_turns": 4},
+                {"key": "problem_diagnosis", "name_cn": "问题诊断", "description": "AI逐步排查用户问题原因（4-5轮）", "example_turns": 5},
+                {"key": "process_guidance", "name_cn": "流程指导", "description": "用户逐步学习某个操作流程（3-5轮）", "example_turns": 4},
+                {"key": "memory_verification", "name_cn": "记忆验证", "description": "用户测试AI是否记住前文信息（3-4轮）", "example_turns": 4},
+            ],
             "evaluation_rules": {},
             "evaluation_settings": {"injection_independence_policy": "strict"},
         }
@@ -445,6 +415,28 @@ class ConfigRegistry:
     @property
     def multi_turn_scenarios(self) -> list:
         return self._test_config.get("multi_turn_scenarios", [])
+
+    @property
+    def csv_export_config(self) -> dict:
+        return self._test_config.get("csv_export_config", {
+            "encoding": "utf-8-sig",
+            "base_fields": [
+                {"name": "id", "header_cn": "用例ID"},
+                {"name": "dimension", "header_cn": "评测维度"},
+                {"name": "dimension_cn", "header_cn": "维度中文名"},
+                {"name": "input", "header_cn": "用户提问"},
+                {"name": "test_purpose", "header_cn": "测试目的"},
+                {"name": "quality_criteria", "header_cn": "质量标准"},
+                {"name": "scenario_type", "header_cn": "场景类型"},
+                {"name": "scenario_type_cn", "header_cn": "场景类型中文名"},
+                {"name": "turn_count", "header_cn": "对话轮数"},
+                {"name": "conversation", "header_cn": "对话流程"},
+            ],
+            "prompt_injection_fields": [
+                {"name": "attack_type", "header_cn": "攻击手法"},
+                {"name": "attack_type_cn", "header_cn": "攻击手法中文名"},
+            ],
+        })
 
     def get_dimension_config(self, dimension: str) -> dict:
         return self.dimensions.get(dimension, {})
@@ -667,6 +659,8 @@ def get_test_generation_config() -> Dict[str, Any]:
 def get_api_key(service: str) -> str:
     """按需获取 API Key（唯一收口）
 
+    优先级：环境变量 → api_config.yaml
+
     Args:
         service: 服务名称，支持 qianfan/dashscope/modelscope
 
@@ -679,11 +673,23 @@ def get_api_key(service: str) -> str:
         "modelscope": "MODELSCOPE_API_KEY",
     }
     env_var = key_map.get(service, "")
-    if not env_var:
-        return ""
-    key = os.getenv(env_var, "")
+    if env_var:
+        key = os.getenv(env_var, "")
+        if key:
+            return key
+
+    api_config = get_api_config()
+    if service == "qianfan":
+        key = api_config.get("qianfan", {}).get("sk", "") or api_config.get("qianfan", {}).get("ak", "")
+    elif service == "dashscope":
+        key = api_config.get("dashscope", {}).get("api_key", "")
+    elif service == "modelscope":
+        key = api_config.get("modelscope", {}).get("api_key", "")
+    else:
+        key = ""
+
     if not key:
-        logger.warning(f"未配置 {env_var}，请在 .env 文件中设置")
+        logger.warning(f"未配置 {service} API Key，请在环境变量或 api_config.yaml 中设置")
     return key
 
 
@@ -726,6 +732,12 @@ def get_evaluation_dimensions() -> Dict[str, Any]:
     """获取评测维度"""
     test_config = get_test_generation_config()
     return test_config.get('dimensions', {})
+
+
+def get_dimension_names() -> Dict[str, str]:
+    """获取维度中文名映射（从配置动态获取，替代硬编码 DIMENSION_NAMES 常量）"""
+    dims = get_evaluation_dimensions()
+    return {k: v.get("name_cn", k) for k, v in dims.items()}
 
 
 def get_execution_config() -> Dict[str, Any]:

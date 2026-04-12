@@ -23,34 +23,42 @@
 
 ```
 llm-testing-portfolio/
-├── docs/                           # 项目文档库
-│   ├── prompt-engineering-guide.md # Prompt 工程技术方案
-│   ├── bad-case-analysis.md        # Bad Case 分析报告
-│   ├── test-run-recorder-workflow.md # 测试运行记录工作流程
-│   ├── report-interpretation.md    # 测试报告解读指南
-│   └── interruption-recovery.md    # 中断恢复指南
+├── knowledge-base/                 # 项目知识库
+│   ├── 01-架构设计/                # 架构设计文档
+│   ├── 02-技术实现/                # 技术实现文档
+│   ├── 03-使用指南/                # 使用指南文档
+│   └── 04-最佳实践/                # 最佳实践文档
 ├── projects/                       # 项目案例
 │   └── 01-ai-customer-service/     # AI 客服系统评测项目
 │       ├── cases/                  # 测试用例库
 │       │   ├── universal.json      # 通用评测用例
 │       │   └── universal.md        # 用例说明文档
 │       └── results/                # 测试结果（按批次存储）
-│           └── batch-006_2026-04-06/
+│           └── batch-016_2026-04-13/
 ├── configs/                        # 配置中心
 │   ├── business_rules.yaml         # 业务规则配置
-│   ├── test_generation_config.yaml # 测试生成配置
+│   ├── execution.yaml              # 执行参数配置
+│   ├── test_generation.yaml        # 测试生成配置
 │   └── api_config_example.yaml     # API 配置模板（示例文件）
 ├── scripts/                        # 自动化脚本
 │   ├── run_tests.py               # 主入口：运行测试
 │   ├── generate_test_cases.py     # 入口：生成测试用例
 │   └── tools/                     # 辅助模块
-│       ├── model_config.py        # 配置管理
-│       ├── config_loader.py       # 配置加载器
-│       └── record_test_run.py     # 执行记录
+│       ├── config.py              # 配置管理（ConfigRegistry）
+│       ├── evaluation.py          # 评测逻辑（Prompt组装/解析）
+│       ├── execution.py           # 执行逻辑（运行记录/用例执行）
+│       ├── reporting.py           # 报告生成（BadCase/Bug/CSV）
+│       ├── prompt_template.py     # Prompt模板加载
+│       ├── under_test_prompt_assembler.py  # 被测模型Prompt组装
+│       └── utils.py               # 通用工具函数
 ├── templates/                      # Prompt 模板库
-│   └── customer-service-evaluator.md # AI客服评测器
+│   ├── customer-service-evaluator.md  # AI客服评测器主模板
+│   ├── evaluator-prompts/         # 评测Prompt模板
+│   ├── evaluator-sections/        # 维度专用规则片段
+│   ├── generation/                # 用例生成模板
+│   └── under-test/                # 被测模型Prompt模板
 ├── requirements.txt                # Python 依赖
-├── AI_CODING_RULES.md              # AI 编码规范
+├── CLAUDE.md                       # AI 编码规范
 ├── LICENSE                         # MIT 许可证
 └── README.md                       # 本文件
 ```
@@ -71,7 +79,7 @@ cd llm-testing-portfolio
 
 # 2. 配置 API Key
 cp configs/api_config_example.yaml configs/api_config.yaml
-# 编辑 configs/api_config_local.yaml 文件，填入你的 API 密钥
+# 编辑 configs/api_config.yaml 文件，填入你的 API 密钥
 
 # 3. 安装依赖
 pip install -r requirements.txt
@@ -91,7 +99,7 @@ pip install -r requirements.txt
    - **阿里云 DashScope**：访问 [阿里云 DashScope 控制台](https://dashscope.console.aliyun.com/)
    - **魔搭社区**：访问 [魔搭社区控制台](https://modelscope.cn/)
 
-**安全提示**：`configs/api_config_local.yaml` 文件已被 `.gitignore` 保护，不会被提交到版本控制系统。
+**安全提示**：`configs/api_config.yaml` 文件已被 `.gitignore` 保护，不会被提交到版本控制系统。
 
 ### 运行测试
 
@@ -323,27 +331,31 @@ python run_tests.py  # 运行测试用例
 
 ---
 
-## 文档库
+## 知识库
 
 ### 核心技术文档
 
-- [Prompt 工程技术方案](./docs/prompt-engineering-guide.md) - AI 评测场景下的 Prompt 设计方法论
-- [学习路线图](./docs/roadmap.md) - 8-12 周学习规划
+- [Prompt 工程实现指南](./knowledge-base/02-技术实现/Prompt工程实现指南.md) - AI 评测场景下的 Prompt 设计方法论
 
 ### 架构设计
 
-- [TestRunRecorder 工作流程](./docs/architecture/test-run-recorder-workflow.md) - 测试运行审计和追溯模块
+- [三文件分离架构详解](./knowledge-base/01-架构设计/三文件分离架构详解.md) - 核心架构设计
+- [评测维度体系设计](./knowledge-base/01-架构设计/评测维度体系设计.md) - 10维度评测体系
+- [配置中心化设计](./knowledge-base/01-架构设计/配置中心化设计.md) - 配置管理架构
+- [测试运行记录器设计](./knowledge-base/02-技术实现/测试运行记录器设计.md) - 测试运行审计和追溯模块
+- [评测管线实现详解](./knowledge-base/02-技术实现/评测管线实现详解.md) - 评测管线技术实现
+- [配置注册中心设计](./knowledge-base/02-技术实现/配置注册中心设计.md) - 配置注册中心实现
 
 ### 技术分析
 
-- [Bad Case 分析报告](./docs/technical-analysis/bad-case-analysis.md) - 失败用例深度分析
-- [Few-shot 设计分析](./docs/technical-analysis/fewshot-design-analysis.md) - Few-shot 示例设计思路
-- [测试用例版本管理逻辑](./docs/technical-analysis/test-case-version-management-logic.md) - 版本管理方案
+- [Bad Case 分析方法论](./knowledge-base/04-最佳实践/Bad%20Case分析方法论.md) - 失败用例深度分析
 
 ### 使用指南
 
-- [测试报告解读指南](./docs/user-guide/report-interpretation.md) - 如何理解测试报告
-- [中断恢复指南](./docs/user-guide/interruption-recovery.md) - 测试中断后的恢复策略
+- [快速开始](./knowledge-base/03-使用指南/快速开始.md) - 项目快速上手
+- [测试报告解读指南](./knowledge-base/03-使用指南/测试报告解读指南.md) - 如何理解测试报告
+- [测试用例生成指南](./knowledge-base/03-使用指南/测试用例生成指南.md) - 用例生成操作说明
+- [中断恢复指南](./knowledge-base/04-最佳实践/中断恢复操作指南.md) - 测试中断后的恢复策略
 
 ### 文档价值说明
 
@@ -372,7 +384,7 @@ python run_tests.py  # 运行测试用例
 ### 工具开源
 
 - ✅ 自动化评测脚本：`scripts/run_tests.py`（推荐）
-- ✅ CoT 对比脚本：`scripts/compare_cot_methods.py`
+- ✅ 用例生成脚本：`scripts/generate_test_cases.py`
 - ✅ Prompt 模板库：`templates/`
 
 ---
@@ -419,18 +431,17 @@ python run_tests.py  # 运行测试用例
 ## Bad Case 分析
 
 > **注**: 当前测试用例均通过，暂无失败案例。
-> **待补充**: 扩充用例后，整理典型失败案例及优化方案。
 
 ---
 
 ## 下一步计划
 
-| 优先级 | 任务 | 预计时间 |
-|--------|------|---------|
-| 🔥 高 | 收集 Bad Case 并分析 | 本周 |
-| 🔶 中 | 优化 Prompt 模板 | 下周 |
-| 🔶 中 | 扩展到其他评测场景 | 下周 |
-| 📅 低 | 开发 Web 可视化界面 | 后续 |
+| 优先级 | 任务 |
+|--------|------|
+| 🔥 高 | 收集 Bad Case 并分析 |
+| 🔶 中 | 优化 Prompt 模板 |
+| 🔶 中 | 扩展到其他评测场景 |
+| 📅 低 | 开发 Web 可视化界面 |
 
 ---
 
@@ -441,5 +452,5 @@ python run_tests.py  # 运行测试用例
 ---
 
 *项目开始时间: 2026-03-25*
-*最后更新: 2026-04-06*
+*最后更新: 2026-04-12*
 *如果这个作品集对你有帮助，欢迎 Star ⭐*

@@ -1,31 +1,31 @@
-# LLM 自动化评测框架文档总览
+# LLM 自动化评测框架知识库
 
 > 专业级 AI 客服质量保障工具集，面向技术决策者的完整解决方案
 
-## 📚 文档结构概览
+## 📚 知识库结构概览
 
-本项目文档采用分层架构设计，从核心架构思想到具体实现细节，全面覆盖 AI 自动化评测的各个方面。
+本知识库采用分层架构设计，从核心架构思想到具体实现细节，全面覆盖 AI 自动化评测的各个方面。
 
 ```
-docs/
+knowledge-base/
 ├── 📁 01-架构设计/                    # 核心架构思想和技术决策
 │   ├── 三文件分离架构详解.md          # ★ 核心创新架构
-│   ├── 评测维度体系设计.md            # 10维度评测体系
-│   └── 配置中心化设计.md              # YAML配置外置架构
+│   ├── 评测维度体系设计.md            # 10 维度评测体系
+│   └── 配置中心化设计.md              # YAML 配置外置架构
 │
 ├── 📁 02-技术实现/                    # 具体实现细节
-│   ├── Prompt工程实现指南.md          # 动态Prompt组装
+│   ├── Prompt 工程实现指南.md          # 动态 Prompt 组装
 │   ├── 评测管线实现详解.md            # 统一评测管线
 │   ├── 配置注册中心设计.md            # 单例模式应用
 │   └── 测试运行记录器设计.md          # 审计和追溯机制
 │
 ├── 📁 03-使用指南/                    # 用户使用文档
-│   ├── 快速开始.md                    # 5分钟上手
+│   ├── 快速开始.md                    # 5 分钟上手
 │   ├── 测试用例生成指南.md            # 用例生成流程
 │   └── 测试报告解读指南.md            # 结果分析
 │
 ├── 📁 04-最佳实践/                    # 经验总结
-│   ├── Bad Case分析方法论.md          # 问题定位
+│   ├── Bad Case 分析方法论.md          # 问题定位
 │   ├── 中断恢复操作指南.md            # 故障处理
 │   └── 性能优化建议.md                # 扩展性考虑
 │
@@ -80,7 +80,7 @@ AI 测试:  输入 → 概率性输出 → 评测判定 → 判定结果
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-username/llm-testing-portfolio.git
+git clone https://github.com/BighuaBighua/llm-testing-portfolio.git
 cd llm-testing-portfolio
 
 # 2. 安装依赖
@@ -109,19 +109,14 @@ cat projects/01-ai-customer-service/results/batch-001/summary.md
 ### 动态Prompt组装引擎
 
 ```python
-class PromptAssembler:
-    """Prompt动态组装引擎"""
+class EvaluatorPromptAssembler:
+    """评测Prompt动态组装引擎 - 按需加载维度规则，节省Token"""
 
-    def assemble_evaluation_prompt(self, test_case, evaluation_type="compliance"):
-        """组装评测Prompt"""
-
-        # 根据评测类型选择组件
-        if evaluation_type == "compliance":
-            components = ['role_evaluator', 'compliance_rules', 'few_shot_examples']
-        elif evaluation_type == "security":
-            components = ['role_security', 'security_rules', 'security_examples']
-
-        return self.assemble_prompt(components, context)
+    def assemble(self, test_case: dict, dimension: str) -> str:
+        """组装评测Prompt：基础模板 + 维度规则 + 场景注入"""
+        base_prompt = self.template_loader.load("customer-service-evaluator.md")
+        dimension_section = self.template_loader.load_section(f"{dimension}-focus.md")
+        return self._merge(base_prompt, dimension_section, test_case)
 ```
 
 ### 统一评测管线
@@ -208,12 +203,18 @@ class ConfigRegistry:
 每个组件职责单一，支持独立测试和替换：
 
 ```python
-# 可插拔的评测维度
-class DimensionRouter:
-    def route_dimension(self, test_case: Dict, dimension: str):
-        if dimension in self.dimension_handlers:
-            handler = self.dimension_handlers[dimension]
-            return handler.process(test_case)
+# 可插拔的评测维度路由
+def route_evaluation(test_case: dict, dimension: str) -> str:
+    """根据维度动态选择评测规则片段"""
+    section_map = {
+        "multi": "multi-dimension-focus.md",
+        "multi_turn": "multi-turn-focus.md",
+        "prompt_injection": "prompt-injection-rules.md",
+    }
+    section_file = section_map.get(dimension)
+    if section_file:
+        return template_loader.load_section(section_file)
+    return None
 ```
 
 ### 配置驱动架构
@@ -230,7 +231,7 @@ scenarios:
       out_of_scope: ["产品推荐", "投资建议"]
 ```
 
-## 🎯 面向面试官的技术亮点
+## 🎯 项目技术亮点与核心价值
 
 ### 架构设计能力
 - **三文件分离架构**：创新的AI测试方法论
@@ -247,7 +248,7 @@ scenarios:
 - **可扩展性**：支持多业务场景
 - **可维护性**：完整的文档体系
 
-## 📚 文档阅读指南
+## 📚 知识库阅读指南
 
 ### 按角色推荐阅读顺序
 

@@ -17,7 +17,6 @@ AI客服系统自动化测试执行脚本 V3.0
 5. OpenAI 兼容协议统一调用
 6. append 模式 recorder 正常创建
 
-作者: BighuaBighua
 日期: 2026-04-09
 版本: 3.0
 """
@@ -35,11 +34,14 @@ import requests
 
 from tools.config import (
     get_api_config,
+    get_api_key,
     get_business_rules,
     get_execution_config,
     get_evaluator_providers,
+    get_model_config,
     get_model_under_test,
-    get_evaluation_dimensions
+    get_evaluation_dimensions,
+    get_dimension_names
 )
 from tools.config import (
     get_test_cases_path,
@@ -49,7 +51,7 @@ from tools.config import (
 from tools.execution import TestRunRecorder
 from tools.evaluation import EvaluatorPromptAssembler
 from tools.evaluation import EvaluationParser, EvaluatorPolicy
-from tools.config import ConfigRegistry, EvaluationContext
+from tools.config import ConfigRegistry, EvaluationContext, EVALUATOR_MODEL, MODEL_UNDER_TEST
 
 # OpenAI 兼容客户端
 try:
@@ -71,7 +73,7 @@ class TestRunner:
 
         # 获取被测模型配置
         model_config = get_model_under_test()
-        self.api_url = model_config.get('base_url', api_config.get('api_common', {}).get('base_url', ''))
+        self.api_url = model_config.get('base_url', '') or api_config.get('qianfan', {}).get('base_url', '')
         self.model = model_config.get('model', 'unknown')
 
         self.test_cases_version = "unknown"
@@ -184,7 +186,7 @@ class TestRunner:
 
     def build_customer_prompt(self, test_case: Dict, conversation_history: List[Dict] = None) -> Union[str, List[Dict]]:
         """
-        构建客服回答 prompt（方案B：只让模型回答，不做评测）
+        构建客服回答 prompt（被测模型回答阶段）
         支持多轮对话：conversation_history 携带历史上下文
         """
         # 获取业务场景信息
@@ -232,16 +234,14 @@ class TestRunner:
                 ai_response=customer_response,
             )
 
-        # 获取评测维度配置
-        evaluation_dimensions = get_evaluation_dimensions()
-
         # 获取维度中文名称
-        dimension_cn = evaluation_dimensions.get(dimension, {}).get('name', dimension)
+        dimension_names = get_dimension_names()
+        dimension_cn = dimension_names.get(dimension, dimension)
 
         # 构建维度焦点说明
         dimension_focus = ""
         if dimension in ['multi', 'boundary', 'conflict', 'induction']:
-            dim_info = evaluation_dimensions.get(dimension, {})
+            dim_info = get_evaluation_dimensions().get(dimension, {})
             if dim_info:
                 dimension_focus = f"""
 ## 重点评估维度
@@ -465,7 +465,7 @@ class TestRunner:
                 result["evaluation_result"][dim_key] = match.group(1).strip()
 
         if dimension in ['multi', 'boundary', 'conflict', 'induction']:
-            dim_cn = DIMENSION_NAMES.get(dimension, dimension)
+            dim_cn = get_dimension_names().get(dimension, dimension)
             focus_patterns = [
                 rf"{dim_cn}[：:]\s*(.*?)\n",
                 rf"{dimension}[：:]\s*(.*?)\n",
@@ -978,9 +978,9 @@ class TestRunner:
         report = f"""# 自动化测试报告
 
 > 执行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-> 测试框架: AI客服自动化测试框架 v2.3（方案B + API后备切换）
+> 测试框架: AI客服自动化测试框架 v3.0（统一评测管线 + 动态Prompt组装）
 > 待测模型: {self.model}
-> 评测模型: {EVALUATOR_MODEL}（主力）
+> 评测模型: {EVALUATOR_MODEL}
 > 用例版本: v{self.test_cases_version}
 
 ---
@@ -1016,9 +1016,8 @@ class TestRunner:
         for dim, stats in sorted(dimension_stats.items()):
             dim_total = stats["passed"] + stats["failed"]
             pass_rate = (stats["passed"] / dim_total * 100) if dim_total > 0 else 0
-            # 获取评测维度配置
-            evaluation_dimensions = get_evaluation_dimensions()
-            dim_name = evaluation_dimensions.get(dim, {}).get('name', dim)
+            dimension_names = get_dimension_names()
+            dim_name = dimension_names.get(dim, dim)
             report += f"| {dim} | {dim_name} | {stats['passed']} | {stats['failed']} | {pass_rate:.1f}% |\n"
 
         if pin_stats["total"] > 0:
@@ -1134,7 +1133,7 @@ class TestRunner:
         report += f"""## 💡 测试总结
 
 - 总通过率: {(passed/total*100):.1f}%
-- 评测模型: {EVALUATOR_MODEL}（主力），后备切换：DashScope → ModelScope → 千帆
+- 评测模型: {EVALUATOR_MODEL}
 - 主要问题分布:
 """
 
@@ -1165,7 +1164,7 @@ def main():
     """主函数"""
 
     # 解析命令行参数
-    parser = argparse.ArgumentParser(description='AI客服系统自动化测试执行脚本 V2.3')
+    parser = argparse.ArgumentParser(description='AI客服系统自动化测试执行脚本 V3.0')
     parser.add_argument('--mode', type=str, default='full',
                        choices=['single', 'selected', 'incremental', 'full'],
                        help='执行模式: single(单条), selected(指定用例), incremental(增量), full(全量)')
@@ -1219,7 +1218,7 @@ def main():
     API_KEY = get_api_key("qianfan")
 
     if not API_KEY:
-        print("❌ 请在项目根目录的.env文件中设置QIANFAN_SK")
+        print("❌ 请在环境变量或 api_config.yaml 中配置 qianfan 的 sk 或 ak")
         return
 
     # 文件路径
@@ -1271,7 +1270,7 @@ def main():
         output_mode = 'append' if args.report == 'append' else 'new'
         print(f"📁 操作批次: {batch_id} ({args.report} 模式)")
 
-        # [FIX-05] append 模式也创建 recorder
+        # append 模式也创建 recorder
         recorder = TestRunRecorder(batch_dir)
         try:
             recorder.load_test_config()
@@ -1360,9 +1359,7 @@ def main():
     # 导出评测结果 CSV
     try:
         from tools.reporting import EvaluationCSVExporter
-        # 获取评测维度配置
-        evaluation_dimensions = get_evaluation_dimensions()
-        dimension_names = {key: dim_info.get('name', key) for key, dim_info in evaluation_dimensions.items()}
+        dimension_names = get_dimension_names()
 
         csv_exporter = EvaluationCSVExporter(results, dimension_names=dimension_names)
         detail_csv_path = os.path.join(batch_dir, "evaluation_detail.csv")
@@ -1395,7 +1392,7 @@ def main():
                 "total_duration_seconds": 0,
                 "average_time_per_case_seconds": 0.0,
                 "success_rate": 1.0,
-                "api_calls": len(results) * 2,  # 方案B：每条用例2次调用
+                "api_calls": len(results) * 2,
                 "total_tokens": 0
             },
             "quality_gates": {

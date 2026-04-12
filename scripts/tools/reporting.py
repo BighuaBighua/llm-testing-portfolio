@@ -13,7 +13,6 @@
 3. 统计绕过成功率
 4. 支持跨批次累积和状态流转
 
-作者: BighuaBighua
 日期: 2026-04-11
 版本: 1.0
 """
@@ -26,7 +25,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from tools.utils import get_logger, ensure_dir, ReportingError
-from tools.config import DIMENSION_NAMES
+from tools.config import get_dimension_names
 
 logger = get_logger(__name__)
 
@@ -39,10 +38,12 @@ class BadCaseManager:
     """Bad Case 管理器
 
     职责：
-    1. 从测试结果中提取不通过用例（P0/P1）
+    1. 从测试结果中提取不通过用例（P0/P1）+ 绕过成功的Prompt注入用例
     2. 去重合并到 bad_cases.json
     3. 生成 changelog.md 变更日志
-    4. 支持跨批次累积和状态流转
+    4. 生成 bad_cases.md 详细报告
+    5. 导出 bad_cases.csv
+    6. 支持跨批次累积和状态流转
     """
 
     def __init__(self, project_dir: str):
@@ -50,6 +51,8 @@ class BadCaseManager:
         self.bad_cases_dir = os.path.join(project_dir, "cases", "bad_cases")
         self.bad_cases_file = os.path.join(self.bad_cases_dir, "bad_cases.json")
         self.changelog_file = os.path.join(self.bad_cases_dir, "changelog.md")
+        self.markdown_file = os.path.join(self.bad_cases_dir, "bad_cases.md")
+        self.csv_file = os.path.join(self.bad_cases_dir, "bad_cases.csv")
 
     def _load_existing(self) -> Dict:
         if os.path.exists(self.bad_cases_file):
@@ -74,37 +77,170 @@ class BadCaseManager:
         with open(self.bad_cases_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
+    def generate_markdown_report(self, data: Optional[Dict] = None):
+        """生成 bad_cases.md 详细报告"""
+        if data is None:
+            data = self._load_existing()
+
+        ensure_dir(self.bad_cases_dir)
+        cases = data.get("bad_cases", [])
+        metadata = data.get("metadata", {})
+
+        lines = [
+            "# Bad Case 沉淀库\n",
+            f"> 最近更新: {metadata.get('updated_at', 'N/A')}",
+            f"> 总 Bad Case 数: {metadata.get('total_bad_cases', 0)}",
+            "",
+            "---\n",
+        ]
+
+        stats = self.get_statistics()
+        lines.append("## 📊 统计概览\n")
+        lines.append(f"- **总数**: {stats['total']}")
+        lines.append(f"- **P0（严重）**: {stats['by_severity'].get('P0', 0)}")
+        lines.append(f"- **P1（一般）**: {stats['by_severity'].get('P1', 0)}")
+        lines.append("")
+
+        lines.append("### 按维度分布\n")
+        lines.append("| 维度 | 数量 |")
+        lines.append("|------|------|")
+        for dim, count in sorted(stats["by_dimension"].items(), key=lambda x: x[1], reverse=True):
+            dim_cn = get_dimension_names().get(dim, dim)
+            lines.append(f"| {dim}（{dim_cn}） | {count} |")
+        lines.append("\n---\n")
+
+        lines.append("## 📋 Bad Case 详情\n")
+        for case in cases:
+            severity_label = {"P0": "严重", "P1": "一般"}.get(case.get("severity", "P1"), "一般")
+            bad_type = case.get("bad_case_type", "不通过")
+            case_id = case.get("case_id", "")
+            source_id = case.get("source_test_case_id", "")
+            dimension = case.get("dimension", "unknown")
+            dim_cn = case.get("dimension_cn", dimension)
+
+            lines.append(f"### {case_id} [{case.get('severity', 'P1')}] {source_id}\n")
+            lines.append(f"- **严重程度**: {case.get('severity', 'P1')} - {severity_label}")
+            lines.append(f"- **类型**: {bad_type}")
+            lines.append(f"- **维度**: {dimension}（{dim_cn}）")
+            lines.append(f"- **来源批次**: {case.get('source_batch_id', '')}")
+            lines.append(f"- **首次发现**: {case.get('first_seen', '')}")
+            lines.append(f"- **最近发现**: {case.get('last_seen', '')}")
+            lines.append(f"- **出现次数**: {case.get('occurrence_count', 1)}")
+            lines.append(f"- **状态**: {case.get('status', 'open')}")
+            lines.append("")
+
+            lines.append("**用户输入**:")
+            lines.append("```")
+            lines.append(case.get("input", ""))
+            lines.append("```\n")
+
+            actual = case.get("actual_response", "")
+            if len(actual) > 500:
+                actual = actual[:500] + "..."
+            lines.append("**AI回复**:")
+            lines.append("```")
+            lines.append(actual)
+            lines.append("```\n")
+
+            if case.get("attack_type_cn"):
+                lines.append(f"**攻击手法**: {case.get('attack_type_cn', '')}（{case.get('attack_type', '')}）")
+            if case.get("bypass_type"):
+                lines.append(f"**绕过类型**: {case.get('bypass_type', '')}")
+
+            if case.get("issues"):
+                lines.append(f"**违规说明**: {'; '.join(case['issues'])}")
+            lines.append("\n---\n")
+
+        with open(self.markdown_file, 'w', encoding='utf-8') as f:
+            f.write("\n".join(lines))
+        logger.info(f"Bad Case Markdown 报告已生成: {self.markdown_file}")
+
+    def export_csv(self, data: Optional[Dict] = None):
+        """导出 bad_cases.csv"""
+        if data is None:
+            data = self._load_existing()
+
+        ensure_dir(self.bad_cases_dir)
+        cases = data.get("bad_cases", [])
+
+        headers = [
+            "Bad Case ID", "来源用例ID", "来源批次", "严重程度", "类型",
+            "维度", "维度中文名", "用户输入", "AI回复",
+            "违规说明", "攻击手法", "攻击手法中文名", "绕过类型",
+            "首次发现", "最近发现", "出现次数", "状态",
+        ]
+
+        with open(self.csv_file, 'w', encoding='utf-8-sig', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            for case in cases:
+                writer.writerow([
+                    case.get("case_id", ""),
+                    case.get("source_test_case_id", ""),
+                    case.get("source_batch_id", ""),
+                    case.get("severity", ""),
+                    case.get("bad_case_type", ""),
+                    case.get("dimension", ""),
+                    case.get("dimension_cn", ""),
+                    case.get("input", "").replace("\n", "\\n")[:500],
+                    case.get("actual_response", "").replace("\n", "\\n")[:500],
+                    "; ".join(case.get("issues", [])),
+                    case.get("attack_type", ""),
+                    case.get("attack_type_cn", ""),
+                    case.get("bypass_type", ""),
+                    case.get("first_seen", ""),
+                    case.get("last_seen", ""),
+                    case.get("occurrence_count", 1),
+                    case.get("status", ""),
+                ])
+
+        logger.info(f"Bad Case CSV 已导出: {self.csv_file}")
+
     def _determine_severity(self, evaluation_result: Dict) -> str:
         compliance = evaluation_result.get("compliance", "")
+        status = evaluation_result.get("status", "")
         if compliance and "不合规" in compliance:
+            return "P0"
+        if status == "绕过成功":
             return "P0"
         return "P1"
 
     def _build_bad_case(self, result: Dict, batch_id: str) -> Dict:
         severity = self._determine_severity(result["evaluation_result"])
         dimension = result.get("dimension", "unknown")
-        dimension_cn = DIMENSION_NAMES.get(dimension, dimension)
+        dimension_cn = get_dimension_names().get(dimension, dimension)
         issues = result["evaluation_result"].get("issues", [])
+        status = result["evaluation_result"].get("status", "")
 
         input_text = result.get("input", "")
         if "\n" in input_text:
             input_text = input_text.split("\n")[0]
 
-        actual_response = result.get("actual_response", "")
+        actual_response = result.get("actual_response", result.get("customer_response", ""))
         if dimension == "multi_turn" and len(actual_response) > 300:
             actual_response = actual_response[:300] + "..."
+
+        bad_case_type = "不通过"
+        if status == "绕过成功":
+            bad_case_type = "绕过成功"
+
+        pin_detail = result.get("prompt_injection_detail", {})
 
         return {
             "case_id": "",
             "source_test_case_id": result.get("id", result.get("test_case_id", "")),
             "source_batch_id": batch_id,
             "severity": severity,
+            "bad_case_type": bad_case_type,
             "dimension": dimension,
             "dimension_cn": dimension_cn,
             "input": input_text,
             "actual_response": actual_response,
             "expected_behavior": "",
             "issues": issues,
+            "attack_type": pin_detail.get("attack_type", ""),
+            "attack_type_cn": pin_detail.get("attack_type_cn", ""),
+            "bypass_type": pin_detail.get("bypass_type", ""),
             "first_seen": datetime.now().strftime("%Y-%m-%d"),
             "last_seen": datetime.now().strftime("%Y-%m-%d"),
             "occurrence_count": 1,
@@ -122,6 +258,16 @@ class BadCaseManager:
                     existing["seen_in_batches"].append(new_case["source_batch_id"])
                 if new_case["severity"] == "P0" and existing["severity"] != "P0":
                     existing["severity"] = "P0"
+                if new_case.get("bad_case_type") and not existing.get("bad_case_type"):
+                    existing["bad_case_type"] = new_case["bad_case_type"]
+                if new_case.get("actual_response"):
+                    existing["actual_response"] = new_case["actual_response"]
+                if new_case.get("attack_type"):
+                    existing["attack_type"] = new_case["attack_type"]
+                if new_case.get("attack_type_cn"):
+                    existing["attack_type_cn"] = new_case["attack_type_cn"]
+                if new_case.get("bypass_type"):
+                    existing["bypass_type"] = new_case["bypass_type"]
                 if new_case["issues"]:
                     for issue in new_case["issues"]:
                         if issue not in existing["issues"]:
@@ -144,10 +290,11 @@ class BadCaseManager:
             all_results = json.load(f)
 
         batch_id = os.path.basename(batch_dir)
-        failed_results = [r for r in all_results if r.get("evaluation_result", {}).get("status") == "不通过"]
+        bad_statuses = {"不通过", "绕过成功"}
+        failed_results = [r for r in all_results if r.get("evaluation_result", {}).get("status") in bad_statuses]
 
         if not failed_results:
-            logger.info(f"批次 {batch_id} 无不通过用例")
+            logger.info(f"批次 {batch_id} 无不通过/绕过成功用例")
             return 0
 
         data = self._load_existing()
@@ -176,6 +323,8 @@ class BadCaseManager:
 
         self._save(data)
         self.generate_changelog(data)
+        self.generate_markdown_report(data)
+        self.export_csv(data)
 
         logger.info(f"Bad Case 提取完成: 新增 {added_count} 条，更新 {updated_count} 条")
         return added_count
@@ -358,7 +507,7 @@ class BugListGenerator:
     def _build_bug_entry(self, result: Dict, bug_index: int) -> Dict:
         test_case_id = result.get("id", result.get("test_case_id", ""))
         dimension = result.get("dimension", "unknown")
-        dimension_cn = DIMENSION_NAMES.get(dimension, dimension)
+        dimension_cn = get_dimension_names().get(dimension, dimension)
         evaluation_result = result.get("evaluation_result", {})
         issues = evaluation_result.get("issues", [])
 
@@ -692,7 +841,7 @@ class EvaluationCSVExporter:
 
     def __init__(self, results: List[Dict], dimension_names: Dict[str, str] = None):
         self._results = results
-        self._dimension_names = dimension_names or DIMENSION_NAMES
+        self._dimension_names = dimension_names or get_dimension_names()
 
     def export_detail_csv(self, output_path: str, mode: str = 'new'):
         """导出评测明细CSV"""

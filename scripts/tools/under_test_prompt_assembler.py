@@ -24,7 +24,7 @@ class UnderTestPromptAssembler:
     模板架构：
     1. 单轮模板：templates/under-test/single-turn.md
     2. 多轮 system 模板：templates/under-test/multi-turn-system.md
-    3. 场景配置：configs/business/scenarios.yaml
+    3. 场景配置：configs/business_rules.yaml
     """
 
     def __init__(self, loader: PromptTemplateLoader = None):

@@ -562,6 +562,255 @@ class PromptEffectivenessMonitor:
         return effectiveness_by_config
 ```
 
+
+## 📦 模板库架构详解
+
+> templates 目录是 Prompt 模板的物理存储，采用模块化、分层设计
+
+### 目录结构
+
+```
+templates/
+├── evaluator-prompts/        # 评测器 Prompt 模板
+│   ├── standard.md           # 单轮对话评测模板
+│   └── multi-turn.md         # 多轮对话评测模板
+├── evaluator-sections/       # 评测维度扩展规则
+│   ├── multi-dimension-focus.md    # 高级维度焦点规则
+│   ├── multi-turn-focus.md         # 多轮对话专用规则
+│   └── prompt-injection-rules.md   # Prompt 注入攻击评测规则
+├── generation/               # 测试用例生成模板
+│   ├── standard.md           # 单轮用例生成模板
+│   ├── multi-turn.md         # 多轮对话用例生成模板
+│   └── prompt-injection.md   # Prompt 注入攻击用例生成模板
+├── under-test/               # 被测模型输入模板
+│   ├── single-turn.md        # 单轮对话输入模板
+│   └── multi-turn-system.md  # 多轮对话 system message 模板
+└── customer-service-evaluator.md  # 基础评测规则总模板
+```
+
+### 各模块功能说明
+
+#### 1. evaluator-prompts/ - 评测器 Prompt 模板
+
+**作用**：定义评测工程师的角色和评测框架，用于指导评测模型执行质量评测。
+
+| 文件 | 功能 | 使用场景 |
+|------|------|---------|
+| `standard.md` | 单轮对话评测框架 | 单轮对话质量评测 |
+| `multi-turn.md` | 多轮对话评测框架 | 多轮连续对话评测 |
+
+**模板结构**：
+- 角色定义（{{evaluator_template}}）
+- 测试用例信息（ID、维度、目的、质量标准）
+- 维度焦点扩展（{{dimension_focus}}）
+- 用户输入/AI 回答/对话记录
+- 输出格式要求
+
+**被谁使用**：`scripts/tools/evaluation.py` 的 `EvaluatorPromptBuilder` 类
+
+#### 2. evaluator-sections/ - 评测维度扩展规则
+
+**作用**：为不同评测维度提供专门的判定规则，作为"插件"插入到 evaluator-prompts 模板中。
+
+| 文件 | 功能 | 适用维度 |
+|------|------|---------|
+| `multi-dimension-focus.md` | 高级维度焦点规则 | boundary、conflict、induction |
+| `multi-turn-focus.md` | 多轮对话专用规则 | multi_turn |
+| `prompt-injection-rules.md` | Prompt 注入攻击评测规则 | prompt_injection |
+
+**核心内容**：
+- **multi-dimension-focus.md**：定义高级维度的重点评估说明
+- **multi-turn-focus.md**：定义 4 个子任务分步校验流程
+  - 子任务 1：逐轮单轮质量校验
+  - 子任务 2：上下文一致性校验
+  - 子任务 3：指令坚守性校验
+  - 子任务 4：规则稳定性校验
+- **prompt-injection-rules.md**：最复杂的扩展规则，包含：
+  - 5 种攻击手法分类（指令忽略、指令覆盖、角色劫持、系统 Prompt 泄露、间接诱导）
+  - 防御成功/绕过成功判定标准
+  - 专用输出格式和 Few-shot 示例
+
+**被谁使用**：`scripts/tools/evaluation.py` 根据评测维度动态选择并插入
+
+#### 3. generation/ - 测试用例生成模板
+
+**作用**：指导 AI 生成测试用例（注意：不是评测，是生成测试数据）。
+
+| 文件 | 功能 | 生成用例类型 |
+|------|------|-------------|
+| `standard.md` | 单轮用例生成模板 | 8 个基础/高级维度用例 |
+| `multi-turn.md` | 多轮对话用例生成模板 | 多轮对话场景用例 |
+| `prompt-injection.md` | Prompt 注入攻击用例生成模板 | 5 种攻击手法用例 |
+
+**生成要求**：
+- 通用性：不出现具体业务词，使用通用表述
+- 格式：JSON 格式输出
+- 数量：每个维度 10 条用例
+
+**被谁使用**：`scripts/generate_test_cases.py`
+
+**输出位置**：`test_cases/` 目录
+
+#### 4. under-test/ - 被测模型输入模板
+
+**作用**：定义被测 AI 客服的系统角色和输入格式，用于向被测 AI 发送测试输入。
+
+| 文件 | 功能 | 使用场景 |
+|------|------|---------|
+| `single-turn.md` | 单轮对话输入模板 | 单轮对话测试 |
+| `multi-turn-system.md` | 多轮对话 system message 模板 | 多轮对话测试 |
+
+**模板变量**：
+- `{{business_scenario}}`：业务场景（如"电商客服"、"银行客服"）
+- `{{business_scope}}`：业务范围描述
+- `{{user_input}}`：用户提问内容
+
+**被谁使用**：`scripts/tools/under_test_prompt_assembler.py`
+
+**配置来源**：`configs/business_rules.yaml` 的场景配置
+
+#### 5. customer-service-evaluator.md - 基础评测规则总模板 ⭐
+
+**作用**：整个评测系统的**核心规则库**，定义所有评测维度的判定标准和输出格式。
+
+**包含内容**：
+- **10 个评测维度**：
+  - 4 个核心维度：准确性、完整性、合规性、态度
+  - 4 个高级维度：多维度、边界场景、多维度冲突、诱导场景
+  - 2 个特殊维度：多轮对话、Prompt 注入攻击
+
+- **详细判定规则**：
+  - 每个维度的通过/不通过标准
+  - 违规类型细分
+  - Few-shot 示例（通用模式 + 具体场景）
+
+- **多轮对话复杂任务拆解**：
+  - 4 个子任务分步校验流程
+  - 指令坚守性校验（是非判断）
+  - 规则稳定性校验（趋势判断）
+
+- **输出格式标准**：
+  - 单轮对话输出格式（含思维链）
+  - 多轮对话输出格式（分步推理）
+  - Prompt 注入攻击专用输出格式
+
+**被谁使用**：`scripts/tools/evaluation.py` 的 `EvaluatorPromptBuilder` 类
+
+### 模板间的相互关系
+
+#### 测试用例生成流程
+
+```
+generation/*.md (生成模板)
+    ↓ 被 generate_test_cases.py 使用
+    ↓
+生成 test_cases/*.json (测试用例)
+```
+
+#### 评测执行流程
+
+```
+under-test/*.md (被测模板)
+    ↓ 被 under_test_prompt_assembler.py 使用
+    ↓ 从 configs/business_rules.yaml 读取场景配置
+    ↓
+发送给被测 AI 客服，获取回答
+```
+
+#### 评测结果判定流程
+
+```
+customer-service-evaluator.md (基础规则)
+    +
+evaluator-prompts/*.md (评测框架)
+    +
+evaluator-sections/*.md (维度扩展规则)
+    ↓ 被 evaluation.py 动态组装
+    ↓
+完整的评测 Prompt → 发送给评测模型 → 输出评测结果
+```
+
+### 数据流和依赖关系
+
+```
+configs/business_rules.yaml
+    ↓ (提供业务场景配置)
+under-test/*.md → 被测 AI 客服 → AI 回答
+    ↓
+test_cases/*.json (测试用例)
+    ↓ (提供用户输入和测试目的)
+evaluation.py 组装评测 Prompt
+    ↓
+customer-service-evaluator.md (基础规则)
+    + 
+evaluator-prompts/standard.md 或 multi-turn.md
+    +
+evaluator-sections/*.md (根据维度选择)
+    ↓
+评测模型 → 评测结果报告
+```
+
+### 设计亮点
+
+1. **模块化设计**：每个文件夹职责清晰，易于维护和扩展
+2. **动态组装**：根据评测维度动态插入对应的扩展规则
+3. **关注点分离**：
+   - `generation/`：生成测试用例
+   - `under-test/`：测试被测模型
+   - `evaluator-*`：评测模型回答质量
+4. **可扩展性**：新增评测维度只需添加对应的 section 文件
+5. **版本管理**：测试用具有版本控制和 changelog
+
+### 使用示例
+
+#### 1. 生成测试用例
+
+```bash
+# 生成所有维度的用例（80 条）
+python3 scripts/generate_test_cases.py
+
+# 只生成指定维度
+python3 scripts/generate_test_cases.py --dimensions boundary,conflict
+
+# 追加模式（在现有用例基础上新增）
+python3 scripts/generate_test_cases.py --append
+```
+
+#### 2. 执行评测
+
+```bash
+# 使用自动化评测脚本
+python3 scripts/run_tests.py
+```
+
+#### 3. 模板渲染示例
+
+```python
+from tools.prompt_template import PromptTemplateLoader
+
+loader = PromptTemplateLoader()
+
+# 渲染被测模型输入模板
+content = loader.render('under-test/single-turn.md', {
+    'business_scenario': '电商客服',
+    'business_scope': '处理订单、退款、售后等问题',
+    'user_input': '请问如何申请退款？'
+})
+
+# 渲染评测器模板
+content = loader.render('evaluator-prompts/standard.md', {
+    'evaluator_template': '...',
+    'test_case_id': 'TC-ACC-001',
+    'dimension': 'accuracy',
+    'dimension_cn': '准确性',
+    'test_purpose': '测试 AI 是否提供准确的信息',
+    'quality_criteria': '准确性：信息准确，无事实错误',
+    'dimension_focus': '...',
+    'user_input': '请问 XX 流程是什么？',
+    'ai_response': '...'
+})
+```
+
 ## 📚 相关技术文档
 
 - [评测管线实现详解](评测管线实现详解.md)

@@ -30,14 +30,14 @@ qianfan:
   ak: "YOUR_QIANFAN_ACCESS_KEY_HERE"        # 🔴 请替换为你的 Access Key
   sk: "YOUR_QIANFAN_SECRET_KEY_HERE"        # 🔴 请替换为你的 Secret Key
   base_url: "https://aip.baidubce.com"
-  model: "ERNIE-Bot-turbo"
+  model: "ernie-4.5-turbo-128k"
   description: "主要测试对象，用于生成 AI 客服回复"
 
 # ----------------------------------------------------------------------------
 # 🔑 阿里云 DashScope API（推荐 - 评测模型主力）
 # ----------------------------------------------------------------------------
 # 获取方式: https://dashscope.console.aliyun.com/
-# 免费额度: 每月100万Token
+# 免费额度: 请查看阿里云官方文档获取最新额度信息
 # 状态: 🟡 推荐 - 主要评测模型
 dashscope:
   name: "阿里云DashScope"
@@ -65,7 +65,7 @@ config_info:
   version: "1.0"
   created_date: "2026-04-10"
   last_updated: "2026-04-10"
-  migration_from: ".env 和 .env.example"
+  migration_from: ".env（已废弃）"
   description: "API 配置中心化迁移，统一管理所有 API 密钥（示例模板）"
   file_type: "示例文件 (Template)"
   usage: "请复制为 api_config.yaml 后使用"
