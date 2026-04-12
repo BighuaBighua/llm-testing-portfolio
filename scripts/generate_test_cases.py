@@ -159,9 +159,9 @@ import requests
 import argparse
 from datetime import datetime
 from typing import Dict, List, Optional
-from tools.config_manager import get_api_config, get_model_under_test
-from tools.model_config import get_test_cases_path
-from tools.config_manager import ConfigRegistry, EvaluationContext
+from tools.config import get_api_config, get_model_under_test
+from tools.config import get_test_cases_path
+from tools.config import ConfigRegistry, EvaluationContext
 
 
 class TestCaseGenerator:
