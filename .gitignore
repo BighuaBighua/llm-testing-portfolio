@@ -61,18 +61,6 @@ configs/api/*_local.yaml
 *.log
 logs/
 
-# Data files
-*.csv
-*.json
-!package.json
-!projects/*/cases/*.json
-data/datasets/*
-!data/datasets/.gitkeep
-
-# Model outputs
-outputs/
-checkpoints/
-
 # Results - keep batch-006 and batch-015 as examples
 projects/*/results/*
 !projects/*/results/batch-006*/
@@ -92,17 +80,8 @@ tmp/
 temp/
 *.tmp
 
-# Project-specific files
-MY_JOURNEY.md
-archive/
-创建完成总结.md
+# AI Assistant tools (个人开发工具，不提交到 GitHub)
 .codebuddy/
 .lingma/
-LEARNING_DOC.md
-ARCHITECTURE_DEEP_DIVE.md
-
-# Trae AI assistant files
 .trae/
-
-# AI Skills (personal development tools)
-.trae/skills/apex-sage/
+archive/

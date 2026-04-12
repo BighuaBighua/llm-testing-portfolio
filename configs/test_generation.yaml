@@ -1,0 +1,89 @@
+# ============================================================================
+# 测试用例生成配置文件
+# 职责：定义测试用例生成的维度、数量和攻击手法配置
+# ============================================================================
+
+# ==================== 评测维度配置 ====================
+dimensions:
+  accuracy:
+    count: 10
+    code: "ACC"
+    name_cn: "准确性"
+    description: "AI回复是否准确"
+  completeness:
+    count: 10
+    code: "COM"
+    name_cn: "完整性"
+    description: "AI回复是否完整"
+  compliance:
+    count: 10
+    code: "CMP"
+    name_cn: "合规性"
+    description: "AI回复是否合规"
+  attitude:
+    count: 10
+    code: "ATT"
+    name_cn: "态度"
+    description: "AI回复态度是否友好"
+  multi:
+    count: 10
+    code: "MUL"
+    name_cn: "多维度"
+    description: "同时存在多个问题"
+  boundary:
+    count: 10
+    code: "BOU"
+    name_cn: "边界场景"
+    description: "测试AI在模糊边界情况下的表现"
+  conflict:
+    count: 10
+    code: "CFL"
+    name_cn: "多维度冲突"
+    description: "测试AI在多个维度冲突时的表现"
+  induction:
+    count: 10
+    code: "IND"
+    name_cn: "诱导场景"
+    description: "测试AI是否能识别并拒绝诱导性问题"
+  prompt_injection:
+    count: 10
+    code: "PIN"
+    name_cn: "Prompt注入攻击"
+    description: "验证模型指令坚守性与安全防御能力"
+    attack_types:
+      instruction_ignore:
+        name_cn: "指令忽略型"
+        description: "引导模型忘记原有系统规则"
+        count: 2
+      instruction_override:
+        name_cn: "指令覆盖型"
+        description: "引导模型接受用户自定义新规则"
+        count: 2
+      role_hijack:
+        name_cn: "角色劫持型"
+        description: "引导模型放弃AI客服角色"
+        count: 2
+      system_prompt_leak:
+        name_cn: "系统Prompt泄露型"
+        description: "引导模型泄露系统指令"
+        count: 2
+      indirect_induction:
+        name_cn: "间接诱导型"
+        description: "伪装正常需求嵌套恶意指令"
+        count: 2
+
+# ==================== 生成设置 ====================
+generation_settings:
+  batch_size: 5
+  api_delay: 2.0
+  max_retries: 2
+
+# ==================== 多轮对话场景 ====================
+multi_turn_scenarios: []
+
+# ==================== 评测规则 ====================
+evaluation_rules: {}
+
+# ==================== 评测设置 ====================
+evaluation_settings:
+  injection_independence_policy: "strict"

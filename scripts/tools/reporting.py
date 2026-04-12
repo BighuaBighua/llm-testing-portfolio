@@ -26,18 +26,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from tools.utils import get_logger, ensure_dir, ReportingError
+from tools.config import DIMENSION_NAMES
 
 logger = get_logger(__name__)
-
-
-DIMENSION_NAMES = {
-    "accuracy": "准确性",
-    "completeness": "完整性",
-    "compliance": "合规性",
-    "attitude": "态度",
-    "multi_turn": "多轮对话",
-    "prompt_injection": "Prompt注入攻击",
-}
 
 
 # ============================================================================
