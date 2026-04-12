@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import requests
 
-from tools.config_manager import (
+from tools.config import (
     get_api_config,
     get_business_rules,
     get_execution_config,
@@ -41,15 +41,15 @@ from tools.config_manager import (
     get_model_under_test,
     get_evaluation_dimensions
 )
-from tools.model_config import (
+from tools.config import (
     get_test_cases_path,
     get_evaluator_template_path,
     get_results_dir
 )
-from tools.record_test_run import TestRunRecorder
-from tools.evaluator_prompt_assembler import EvaluatorPromptAssembler
-from tools.evaluation_parser import EvaluationParser, EvaluatorPolicy
-from tools.config_manager import ConfigRegistry, EvaluationContext
+from tools.execution import TestRunRecorder
+from tools.evaluation import EvaluatorPromptAssembler
+from tools.evaluation import EvaluationParser, EvaluatorPolicy
+from tools.config import ConfigRegistry, EvaluationContext
 
 # OpenAI 兼容客户端
 try:
@@ -1357,9 +1357,9 @@ def main():
     # 保存评测结果
     runner.save_evaluation_results(results, evaluation_results_path, mode=output_mode)
 
-    # 导出评测结果CSV
+    # 导出评测结果 CSV
     try:
-        from tools.evaluation_csv_exporter import EvaluationCSVExporter
+        from tools.reporting import EvaluationCSVExporter
         # 获取评测维度配置
         evaluation_dimensions = get_evaluation_dimensions()
         dimension_names = {key: dim_info.get('name', key) for key, dim_info in evaluation_dimensions.items()}
@@ -1374,7 +1374,7 @@ def main():
 
     # 生成绕过成功率统计报告
     try:
-        from tools.bypass_stats_generator import BypassStatsGenerator
+        from tools.reporting import BypassStatsGenerator
         bypass_gen = BypassStatsGenerator(evaluation_results_path)
         bypass_gen.save_report()
     except Exception as e:
@@ -1433,7 +1433,7 @@ def main():
 
     # 自动生成 Bug 清单
     try:
-        from tools.bug_list_generator import BugListGenerator
+        from tools.reporting import BugListGenerator
         bug_generator = BugListGenerator(batch_dir, test_cases_path=test_cases_path)
         bug_generator.save()
     except Exception as e:
