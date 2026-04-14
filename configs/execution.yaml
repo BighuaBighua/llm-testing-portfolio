@@ -3,160 +3,53 @@
 # 职责：定义测试执行的参数和性能配置
 # ============================================================================
 
-# ==================== 并发执行配置 ====================
 concurrency:
-  
-  # 🔄 并发模式配置
+  default_mode: "concurrent"
   modes:
     single_thread:
       name: "单线程模式"
       description: "最稳定的执行模式，适合调试和验证"
       delay_between_cases: 2.0
       max_concurrent: 1
-    
     concurrent:
       name: "并发模式"
       description: "提高执行效率，适合批量测试"
       delay_between_cases: 0.5
       max_concurrent: 2
-      
     performance:
       name: "性能模式"
       description: "最大化执行效率，注意API限流"
       delay_between_cases: 0.1
       max_concurrent: 5
-
-  # ⚙️ 默认执行模式
-  default_mode: "concurrent"
-  
-  # 🚦 并发控制
   control:
     max_workers: 10
-    queue_size: 100
     timeout_per_case: 300
     retry_on_failure: true
     max_retries: 3
 
-# ==================== 执行参数配置 ====================
 parameters:
-
-  # ⏱️ 时间控制
   timing:
     api_timeout: 60
-    batch_timeout: 3600
     case_timeout: 300
-    delay_between_batches: 10
-    
-  # 📊 性能优化
+  retry:
+    max_attempts: 3
+    backoff_factor: 2
+    max_delay: 60
   performance:
     batch_size: 10
     max_batch_size: 50
     min_batch_size: 3
-    adaptive_batching: true
-    
-  # 🔄 重试机制
-  retry:
-    enabled: true
-    max_attempts: 3
-    backoff_factor: 2
-    max_delay: 60
+  inference:
+    under_test:
+      temperature: 0.7
+      top_p: 0.9
+    evaluator:
+      temperature: 0.3
+      top_p: 0.9
 
-# ==================== 执行模式配置 ====================
-execution_modes:
-
-  # 🔄 执行模式定义
-  modes:
-    full:
-      name: "完整模式"
-      description: "执行所有测试用例"
-      coverage_required: 1.0
-      validation_strict: true
-    
-    incremental:
-      name: "增量模式"
-      description: "只执行未完成的用例"
-      coverage_required: 0.95
-      validation_strict: false
-      
-    sample:
-      name: "抽样模式"
-      description: "执行部分用例进行快速验证"
-      coverage_required: 0.1
-      validation_strict: false
-      sample_size: 10
-
-  # 🎯 默认执行模式
-  default_mode: "full"
-
-# ==================== 报告生成配置 ====================
-reporting:
-
-  # 📄 报告类型
-  report_types:
-    summary:
-      enabled: true
-      format: "markdown"
-      include_details: true
-      
-    detailed:
-      enabled: true
-      format: "json"
-      include_details: true
-      
-    audit:
-      enabled: true
-      format: "json"
-      include_details: true
-
-  # 📊 报告内容
-  content:
-    include_execution_log: true
-    include_configuration: true
-    include_validation_results: true
-    include_recommendations: true
-    
-  # 💾 存储配置
-  storage:
-    max_reports_per_batch: 10
-    auto_cleanup: true
-    cleanup_threshold_days: 30
-
-# ==================== 质量门禁配置 ====================
 quality_gate:
-
-  # 🎯 通过率阈值
-  thresholds:
-    overall: 0.9
-    critical: 0.95
-    warning: 0.8
-    
-  # 📊 维度权重
-  weights:
-    accuracy: 0.25
-    completeness: 0.20
-    compliance: 0.20
-    attitude: 0.10
-    security: 0.15
-    user_experience: 0.10
-    
-  # ⚖️ 判定规则
-  rules:
-    fail_on_critical_failure: true
-    warn_on_major_failure: true
-    allow_partial_success: false
-
-# ==================== 性能监控配置 ====================
-performance_monitoring:
-
-  # 📈 监控指标
-  metrics:
-    execution_time: true
-    api_latency: true
-    error_rate: true
-    throughput: true
-    
-  # ⚠️ 告警阈值
-  alerts:
-    high_latency_threshold: 30.0
-    high_error_rate_threshold: 0.1
-    low_throughput_threshold: 0.1
+  overall_threshold: 0.9
+  critical_dimensions:
+    - "compliance"
+    - "security"
+  critical_threshold: 0.95
