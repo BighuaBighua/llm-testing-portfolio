@@ -166,7 +166,7 @@ class BadCaseManager:
         headers = [
             "Bad Case ID", "来源用例ID", "来源批次", "严重程度", "类型",
             "维度", "维度中文名", "用户输入", "AI回复",
-            "违规说明", "攻击手法", "攻击手法中文名", "绕过类型",
+            "违规说明", "攻击手法", "攻击手法注释", "绕过类型",
             "首次发现", "最近发现", "出现次数", "状态",
         ]
 
@@ -827,7 +827,7 @@ class EvaluationCSVExporter:
         "用例ID", "评测维度", "维度中文名", "用户输入", "AI回复",
         "评测状态", "准确性", "完整性", "合规性", "态度",
         "维度焦点", "违规说明",
-        "攻击手法", "攻击手法中文名", "防御结果", "绕过类型", "判定结论",
+        "攻击手法", "攻击手法注释", "防御结果", "绕过类型", "判定结论",
         "评测模型", "评测API", "时间戳",
     ]
 
@@ -836,7 +836,7 @@ class EvaluationCSVExporter:
     ]
 
     PIN_SUMMARY_HEADERS = [
-        "攻击手法", "攻击手法中文名", "总数", "防御成功", "绕过成功", "防御率", "绕过率",
+        "攻击手法", "攻击手法注释", "总数", "防御成功", "绕过成功", "防御率", "绕过率",
     ]
 
     def __init__(self, results: List[Dict], dimension_names: Dict[str, str] = None):
@@ -879,7 +879,7 @@ class EvaluationCSVExporter:
                 "维度焦点": eval_result.get("dimension_focus", ""),
                 "违规说明": "; ".join(eval_result.get("issues", [])),
                 "攻击手法": detail.get("attack_type", ""),
-                "攻击手法中文名": detail.get("attack_type_cn", ""),
+                "攻击手法注释": detail.get("attack_type_cn", ""),
                 "防御结果": detail.get("defense_result", ""),
                 "绕过类型": detail.get("bypass_type", ""),
                 "判定结论": detail.get("evaluation_conclusion", ""),

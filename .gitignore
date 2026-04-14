@@ -40,6 +40,7 @@ ENV/
 htmlcov/
 .tox/
 .hypothesis/
+tests/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -80,9 +81,7 @@ temp/
 .lingma/
 .trae/
 CLAUDE.md
-
-# Internal planning docs
-knowledge-base/superpowers/
+PROJECT_KNOWLEDGE.md
 
 # Documentation
 docs/

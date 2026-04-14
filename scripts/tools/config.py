@@ -434,7 +434,7 @@ class ConfigRegistry:
             ],
             "prompt_injection_fields": [
                 {"name": "attack_type", "header_cn": "攻击手法"},
-                {"name": "attack_type_cn", "header_cn": "攻击手法中文名"},
+                {"name": "attack_type_cn", "header_cn": "攻击手法注释"},
             ],
         })
 
