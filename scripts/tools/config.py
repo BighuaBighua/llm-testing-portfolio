@@ -32,25 +32,8 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
-API_TIMEOUT = 60
-API_TEMPERATURE = 0.7
-API_TOP_P = 0.9
-
-SINGLE_THREAD_DELAY = 2.0
-CONCURRENT_DELAY = 0.5
-MAX_CONCURRENT_SUGGESTION = 2
-
-QUALITY_GATE_THRESHOLD = 0.9
-
-BUSINESS_SCENARIO = "通用客服"
-BUSINESS_SCOPE = "回答用户关于服务、流程、操作等方面的问题"
-
 MODEL_UNDER_TEST = "ernie-4.5-turbo-128k"
-API_ENDPOINT = "https://qianfan.baidubce.com/v2/chat/completions"
-
 EVALUATOR_MODEL = "qwen-turbo"
-EVALUATOR_API_ENDPOINT = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-EVALUATOR_PROVIDERS = []
 
 
 # ============================================================================
@@ -124,6 +107,7 @@ class ConfigLoader:
         self._business_rules_cache: Optional[dict] = None
         self._test_generation_cache: Optional[dict] = None
         self._api_config_cache: Optional[dict] = None
+        self._execution_config_cache: Optional[dict] = None
 
     @staticmethod
     def _resolve_config_dir() -> str:
@@ -187,6 +171,33 @@ class ConfigLoader:
 
         self._api_config_cache = result
         return self._api_config_cache
+
+    def load_execution_config(self) -> dict:
+        if self._execution_config_cache is not None:
+            return self._execution_config_cache
+        self._execution_config_cache = self._load_yaml_with_fallback(
+            "execution.yaml", self._build_execution_fallback
+        )
+        return self._execution_config_cache
+
+    def _build_execution_fallback(self) -> dict:
+        return {
+            "concurrency": {
+                "default_mode": "concurrent",
+                "modes": {
+                    "single_thread": {"delay_between_cases": 2.0, "max_concurrent": 1},
+                    "concurrent": {"delay_between_cases": 0.5, "max_concurrent": 2},
+                },
+            },
+            "parameters": {
+                "timing": {"api_timeout": 60},
+                "inference": {
+                    "under_test": {"temperature": 0.7, "top_p": 0.9},
+                    "evaluator": {"temperature": 0.3, "top_p": 0.9},
+                },
+            },
+            "quality_gate": {"overall_threshold": 0.9},
+        }
 
     def _build_business_rules_fallback(self) -> dict:
         """构建业务规则默认配置"""
@@ -340,6 +351,8 @@ class ConfigRegistry:
         self._active_scenario_key = active_scenario
         self._active_scenario = self._business_rules.get("scenarios", {}).get(active_scenario, {})
 
+        self._execution_config = config_loader.load_execution_config()
+
         self._frozen = True
 
     @classmethod
@@ -393,6 +406,29 @@ class ConfigRegistry:
         return self._active_scenario.get("constraints", [])
 
     @property
+    def execution_config(self) -> dict:
+        return self._execution_config
+
+    @property
+    def quality_gate(self) -> dict:
+        return self._execution_config.get("quality_gate", {"overall_threshold": 0.9})
+
+    @property
+    def inference_params(self) -> dict:
+        return self._execution_config.get("parameters", {}).get("inference", {
+            "under_test": {"temperature": 0.7, "top_p": 0.9},
+            "evaluator": {"temperature": 0.3, "top_p": 0.9},
+        })
+
+    @property
+    def under_test_inference(self) -> dict:
+        return self.inference_params.get("under_test", {"temperature": 0.7, "top_p": 0.9})
+
+    @property
+    def evaluator_inference(self) -> dict:
+        return self.inference_params.get("evaluator", {"temperature": 0.3, "top_p": 0.9})
+
+    @property
     def business_language_norms(self) -> dict:
         return self._active_scenario.get("business_language_norms", {})
 
@@ -423,12 +459,12 @@ class ConfigRegistry:
             "base_fields": [
                 {"name": "id", "header_cn": "用例ID"},
                 {"name": "dimension", "header_cn": "评测维度"},
-                {"name": "dimension_cn", "header_cn": "维度中文名"},
+                {"name": "dimension_cn", "header_cn": "维度中文注释"},
                 {"name": "input", "header_cn": "用户提问"},
                 {"name": "test_purpose", "header_cn": "测试目的"},
                 {"name": "quality_criteria", "header_cn": "质量标准"},
                 {"name": "scenario_type", "header_cn": "场景类型"},
-                {"name": "scenario_type_cn", "header_cn": "场景类型中文名"},
+                {"name": "scenario_type_cn", "header_cn": "场景类型中文注释"},
                 {"name": "turn_count", "header_cn": "对话轮数"},
                 {"name": "conversation", "header_cn": "对话流程"},
             ],
@@ -624,6 +660,10 @@ class ConfigManager:
         """加载测试生成配置"""
         return self._loader.load_test_generation_config()
 
+    def load_execution_config(self) -> Dict[str, Any]:
+        """加载执行配置"""
+        return self._loader.load_execution_config()
+
 
 # 全局配置管理器实例
 _config_manager: Optional[ConfigManager] = None
@@ -735,15 +775,13 @@ def get_evaluation_dimensions() -> Dict[str, Any]:
 
 
 def get_dimension_names() -> Dict[str, str]:
-    """获取维度中文名映射（从配置动态获取，替代硬编码 DIMENSION_NAMES 常量）"""
+    """获取维度中文注释映射（从配置动态获取，替代硬编码 DIMENSION_NAMES 常量）"""
     dims = get_evaluation_dimensions()
     return {k: v.get("name_cn", k) for k, v in dims.items()}
 
 
 def get_execution_config() -> Dict[str, Any]:
-    """获取执行配置"""
-    test_config = get_test_generation_config()
-    return test_config.get('generation_settings', {})
+    return get_config_manager().get_loader().load_execution_config()
 
 
 def get_model_config() -> dict:
