@@ -1,15 +1,14 @@
 """
-执行模块 V1.0
+执行模块 V1.1
 
 职责：
 1. 测试执行记录管理（TestRunRecorder）
-2. 测试用例执行器（TestCaseExecutor）
-3. 执行日志管理
-4. 完整性验证
-5. 异常检测
+2. 执行日志管理
+3. 完整性验证
+4. 异常检测
 
-日期: 2026-04-11
-版本: 1.0
+日期: 2026-04-15
+版本: 1.1
 """
 
 import json
@@ -120,8 +119,12 @@ class TestRunRecorder:
             "test_parameters": {
                 "mode": test_parameters.get("mode", "full"),
                 "concurrent": test_parameters.get("concurrent", 1),
-                "timeout": test_parameters.get("timeout", 30),
-                "retry_attempts": test_parameters.get("retry_attempts", 3)
+                "timeout": test_parameters.get("timeout",
+                    self._registry.execution_config.get("parameters", {}).get("timing", {}).get("case_timeout", 300)
+                    if self._registry else 300),
+                "retry_attempts": test_parameters.get("retry_attempts",
+                    self._registry.execution_config.get("parameters", {}).get("retry", {}).get("max_attempts", 3)
+                    if self._registry else 3),
             },
 
             "execution_metrics": {
@@ -133,7 +136,8 @@ class TestRunRecorder:
             },
 
             "quality_gates": {
-                "pass_rate_threshold": 0.9,
+                "pass_rate_threshold": self._registry.quality_gate.get("overall_threshold", 0.9)
+                    if self._registry else 0.9,
                 "actual_pass_rate": 0.0,
                 "result": "PENDING"
             }
@@ -417,54 +421,3 @@ class TestRunRecorder:
         }
 
 
-# ============================================================================
-# 第二部分：测试用例执行器
-# ============================================================================
-
-class TestCaseExecutor:
-    """
-    测试用例执行器
-
-    职责：
-    - 调用被测模型获取AI回答
-    - 管理API调用和重试
-    - 处理执行异常
-    """
-
-    def __init__(self, config_registry: ConfigRegistry = None):
-        """
-        初始化执行器
-
-        Args:
-            config_registry: 配置注册中心（依赖注入）
-        """
-        self._registry = config_registry or ConfigRegistry.get_instance()
-
-    def execute(self, test_case: dict, api_client=None) -> str:
-        """
-        执行测试用例
-
-        Args:
-            test_case: 测试用例
-            api_client: API客户端（可选，用于依赖注入）
-
-        Returns:
-            str: AI回答内容
-
-        Raises:
-            ExecutionError: 执行失败
-        """
-        try:
-            if api_client is None:
-                return self._execute_with_default_client(test_case)
-            else:
-                return api_client.execute(test_case)
-        except Exception as e:
-            raise ExecutionError(
-                f"测试用例执行失败: {test_case.get('id', 'unknown')}",
-                details={"case_id": test_case.get("id"), "error": str(e)}
-            )
-
-    def _execute_with_default_client(self, test_case: dict) -> str:
-        """使用默认客户端执行（需要在外部实现API调用逻辑）"""
-        raise NotImplementedError("请在 run_tests.py 中实现具体的API调用逻辑")
