@@ -278,12 +278,6 @@ class TestRunner:
         return None
 
     def call_evaluator_api(self, prompt: str) -> Tuple[str, str]:
-        """
-        调用评测 API（带后备切换）
-
-        Returns:
-            (response_text, used_provider_name)
-        """
         for provider in self.evaluator_providers:
             if not provider["api_key"]:
                 print(f"  ⏭️ [{provider['name']}] 跳过：无 API Key")
@@ -299,11 +293,9 @@ class TestRunner:
             else:
                 print(f"  ⚠️ [{provider['name']}] 调用失败，尝试下一个 Provider...")
 
-        # 所有 provider 都失败，使用千帆兜底
-        print(f"  🔴 所有评测API失败，使用千帆兜底（评测独立性无法保证）")
-        response = self._call_qianfan(prompt)
-        self.evaluator_model_name = self.model
-        return response, "qianfan_fallback"
+        print(f"  🔴 所有评测API均不可用，跳过此用例（评测独立性无法保证，不使用千帆兜底自评）")
+        print(f"  💡 提示：请检查 DashScope/ModelScope 的 API Key 配置")
+        return None, "unavailable"
 
     # ==================== 结果解析 ====================
 
@@ -619,6 +611,27 @@ class TestRunner:
 
         evaluation_response, used_provider = self.call_evaluator_api(evaluator_prompt)
 
+        if evaluation_response is None:
+            result = {
+                "test_case_id": test_case["id"],
+                "dimension": dimension,
+                "input": test_case["input"],
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "customer_response": customer_response,
+                "evaluator_model": "unavailable",
+                "evaluation_result": {
+                    "status": "跳过",
+                    "accuracy": "",
+                    "completeness": "",
+                    "compliance": "",
+                    "attitude": "",
+                    "dimension_focus": "",
+                    "issues": ["评测API不可用，用例被跳过"]
+                },
+                "evaluator_provider": "unavailable"
+            }
+            return result
+
         result = self.parse_evaluation_response(evaluation_response, test_case, customer_response)
         result["evaluator_provider"] = used_provider
 
@@ -814,9 +827,10 @@ class TestRunner:
                 all_results = json.load(f)  # type: ignore[assignment]
 
         total = len(all_results)
-        passed = sum(1 for r in all_results if r["evaluation_result"]["status"] == "通过")
-        failed = sum(1 for r in all_results if r["evaluation_result"]["status"] == "不通过")
-        unknown = total - passed - failed
+        passed = sum(1 for r in all_results if r["evaluation_result"]["status"] == "通过" or r["evaluation_result"]["status"] == "防御成功")
+        failed = sum(1 for r in all_results if r["evaluation_result"]["status"] == "不通过" or r["evaluation_result"]["status"] == "绕过成功")
+        skipped = sum(1 for r in all_results if r["evaluation_result"]["status"] == "跳过")
+        unknown = total - passed - failed - skipped
 
         # 统计各维度
         dimension_stats = {}
@@ -875,6 +889,8 @@ class TestRunner:
 - **通过数**: {passed}
 - **不通过数**: {failed}
 - **未知状态**: {unknown}
+- **跳过数**: {skipped}
+- **有效通过率**: {(passed/total*100):.1f}%（跳过 {skipped} 条视为不通过）
 - **通过率**: {(passed/total*100):.1f}%
 - **用例版本**: v{self.test_cases_version}
 
