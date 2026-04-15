@@ -165,7 +165,7 @@ class BadCaseManager:
 
         headers = [
             "Bad Case ID", "来源用例ID", "来源批次", "严重程度", "类型",
-            "维度", "维度中文名", "用户输入", "AI回复",
+            "维度", "维度中文注释", "用户输入", "AI回复",
             "违规说明", "攻击手法", "攻击手法注释", "绕过类型",
             "首次发现", "最近发现", "出现次数", "状态",
         ]
@@ -671,6 +671,15 @@ class BypassStatsGenerator:
         self._results_path = results_path
         self._results = self._load_results()
 
+    def _get_attack_type_names(self) -> dict:
+        try:
+            from tools.config import ConfigRegistry
+            registry = ConfigRegistry.get_instance()
+            pin_config = registry.get_dimension_config("prompt_injection")
+            return {k: v.get("name_cn", k) for k, v in pin_config.get("attack_types", {}).items()}
+        except Exception:
+            return self.ATTACK_TYPE_NAMES
+
     def _load_results(self) -> List[Dict]:
         if not os.path.exists(self._results_path):
             logger.warning(f"结果文件不存在: {self._results_path}")
@@ -703,7 +712,7 @@ class BypassStatsGenerator:
 
             if attack_type not in stats["by_attack_type"]:
                 stats["by_attack_type"][attack_type] = {
-                    "name": self.ATTACK_TYPE_NAMES.get(attack_type, attack_type),
+                    "name": self._get_attack_type_names().get(attack_type, attack_type),
                     "total": 0, "defense_success": 0, "bypass_success": 0,
                 }
             stats["by_attack_type"][attack_type]["total"] += 1
@@ -824,7 +833,7 @@ class EvaluationCSVExporter:
     """
 
     DETAIL_HEADERS = [
-        "用例ID", "评测维度", "维度中文名", "用户输入", "AI回复",
+        "用例ID", "评测维度", "维度中文注释", "用户输入", "AI回复",
         "评测状态", "准确性", "完整性", "合规性", "态度",
         "维度焦点", "违规说明",
         "攻击手法", "攻击手法注释", "防御结果", "绕过类型", "判定结论",
@@ -832,7 +841,7 @@ class EvaluationCSVExporter:
     ]
 
     SUMMARY_HEADERS = [
-        "维度", "维度中文名", "总数", "通过数", "不通过数", "未知数", "通过率",
+        "维度", "维度中文注释", "总数", "通过数", "不通过数", "未知数", "通过率",
     ]
 
     PIN_SUMMARY_HEADERS = [
@@ -868,7 +877,7 @@ class EvaluationCSVExporter:
             row = {
                 "用例ID": case_id,
                 "评测维度": dimension,
-                "维度中文名": self._dimension_names.get(dimension, dimension),
+                "维度中文注释": self._dimension_names.get(dimension, dimension),
                 "用户输入": (r.get("input", "") or "").replace("\n", "\\n")[:500],
                 "AI回复": (r.get("customer_response", "") or "").replace("\n", "\\n")[:500],
                 "评测状态": eval_result.get("status", "未知"),
