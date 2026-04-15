@@ -137,6 +137,43 @@ evaluation_rules: {}
 # ==================== 评测设置 ====================
 evaluation_settings:
   injection_independence_policy: "strict"
+  sections:
+    default:
+      - "role"
+      - "rules"
+      - "output"
+      - "constraints"
+    prompt_injection:
+      - "role"
+      - "rules"
+      - "output"
+      - "constraints"
+    multi_turn:
+      - "role"
+      - "rules"
+      - "multi_turn"
+      - "output"
+      - "constraints"
+    multi:
+      - "role"
+      - "rules"
+      - "output"
+      - "constraints"
+    boundary:
+      - "role"
+      - "rules"
+      - "output"
+      - "constraints"
+    conflict:
+      - "role"
+      - "rules"
+      - "output"
+      - "constraints"
+    induction:
+      - "role"
+      - "rules"
+      - "output"
+      - "constraints"
 
 # ==================== CSV导出配置 ====================
 csv_export_config:

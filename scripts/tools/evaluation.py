@@ -292,25 +292,14 @@ class EvaluatorPromptAssembler:
     """评测Prompt动态组装器
 
     根据评测维度和场景上下文，动态组装完整的评测Prompt。
-    避免将所有维度规则塞入同一个超长Prompt，按需组装减少Token消耗。
+    按需加载 section 文件，避免将所有规则塞入同一个超长Prompt。
 
-    3层模板架构：
-    1. 基础层：templates/customer-service-evaluator.md（通用评测规则）
-    2. 维度扩展层：templates/evaluator-sections/{dimension}-rules.md（维度专用规则）
-    3. 场景注入层：从 EvaluationContext 动态注入场景信息
+    双轨模板架构：
+    1. 完整版：templates/customer-service-evaluator.md（人类可读、可编辑）
+    2. 拆分版：templates/evaluator-sections/{section}.md（代码按需加载）
     """
 
-    SECTION_DIMENSION_MAP = {
-        "prompt_injection": "prompt-injection-rules.md",
-    }
-
     def __init__(self, registry: ConfigRegistry = None):
-        """
-        初始化组装器
-
-        Args:
-            registry: 配置注册中心（依赖注入）
-        """
         self._registry = registry or ConfigRegistry.get_instance()
         self._templates_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "..", "..", "templates"
@@ -324,33 +313,16 @@ class EvaluatorPromptAssembler:
         ai_response: str,
         eval_ctx: Optional[EvaluationContext] = None,
     ) -> str:
-        """组装完整的评测Prompt
-
-        Args:
-            dimension: 评测维度
-            test_case: 测试用例
-            ai_response: AI回复内容
-            eval_ctx: 评测上下文（可选，默认从test_case恢复）
-
-        Returns:
-            完整的评测Prompt字符串
-        """
         if eval_ctx is None:
             eval_ctx = EvaluationContext.from_test_case(test_case)
 
-        base_prompt = self._load_base_template()
-
-        section_content = self._load_dimension_section(dimension)
+        section_names = self._get_section_names(dimension)
+        section_parts = self._load_sections(section_names)
 
         scenario_injection = self._build_scenario_injection(eval_ctx)
-
         test_input = self._format_test_input(test_case, dimension)
 
-        parts = [base_prompt]
-
-        if section_content:
-            parts.append("\n\n---\n\n## 维度扩展规则（动态注入）\n\n")
-            parts.append(section_content)
+        parts = section_parts
 
         parts.append("\n\n---\n\n## 场景信息（动态注入）\n\n")
         parts.append(scenario_injection)
@@ -364,26 +336,26 @@ class EvaluatorPromptAssembler:
 
         return "".join(parts)
 
-    def _load_base_template(self) -> str:
-        """加载基础模板"""
-        base_path = os.path.join(self._templates_dir, "customer-service-evaluator.md")
-        if not os.path.exists(base_path):
-            logger.warning(f"基础模板未找到: {base_path}")
-            return "# AI对话评测\n\n请对以下AI回复进行质量评测。\n"
-        with open(base_path, 'r', encoding='utf-8') as f:
-            return f.read()
+    def _get_section_names(self, dimension: str) -> list:
+        try:
+            sections_cfg = self._registry.evaluation_settings.get("sections", {})
+            return sections_cfg.get(dimension, sections_cfg.get("default", ["role", "rules", "output", "constraints"]))
+        except Exception:
+            return ["role", "rules", "output", "constraints"]
 
-    def _load_dimension_section(self, dimension: str) -> Optional[str]:
-        """加载维度扩展规则"""
-        section_file = self.SECTION_DIMENSION_MAP.get(dimension)
-        if not section_file:
-            return None
-        section_path = os.path.join(self._sections_dir, section_file)
-        if not os.path.exists(section_path):
-            logger.warning(f"维度扩展规则未找到: {section_path}")
-            return None
-        with open(section_path, 'r', encoding='utf-8') as f:
-            return f.read()
+    def _load_sections(self, section_names: list) -> list:
+        parts = []
+        for name in section_names:
+            section_path = os.path.join(self._sections_dir, f"{name}.md")
+            if os.path.exists(section_path):
+                with open(section_path, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                if content:
+                    parts.append(content)
+                    parts.append("\n\n")
+            else:
+                logger.warning(f"Section 文件未找到: {section_path}")
+        return parts
 
     def _build_scenario_injection(self, ctx: EvaluationContext) -> str:
         """构建场景注入内容"""
