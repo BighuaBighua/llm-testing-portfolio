@@ -112,8 +112,8 @@ Git 版本控制:
    - 英文：accuracy / completeness / compliance / attitude / multi / boundary / conflict / induction
    - 中文：准确性 / 完整性 / 合规性 / 态度 / 多维度 / 边界场景 / 多维度冲突 / 诱导场景
 
-3. dimension_cn (维度中文名)
-   - 维度的中文名称，便于理解
+3. dimension_cn (维度中文注释)
+   - 维度的中文注释，便于理解
 
 4. input (用户提问)
    - 用户的提问内容
@@ -367,8 +367,8 @@ class TestCaseGenerator:
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            "temperature": 0.7,
-            "top_p": 0.9
+            "temperature": self._registry.under_test_inference.get("temperature", 0.7) if self._registry else 0.7,
+            "top_p": self._registry.under_test_inference.get("top_p", 0.9) if self._registry else 0.9
         }
 
         for attempt in range(max_retries):
@@ -377,7 +377,7 @@ class TestCaseGenerator:
                     self.api_url,
                     json=data,
                     headers=headers,
-                    timeout=60
+                    timeout=self._registry.execution_config.get("parameters", {}).get("timing", {}).get("api_timeout", 60) if self._registry else 60
                 )
 
                 result = response.json()
@@ -644,7 +644,7 @@ class TestCaseGenerator:
 
             # 用例统计
             f.write("## 用例统计\n\n")
-            f.write("| 维度 | 中文名称 | 数量 |\n")
+            f.write("| 维度 | 中文注释 | 数量 |\n")
             f.write("|------|---------|------|\n")
 
             total = 0
