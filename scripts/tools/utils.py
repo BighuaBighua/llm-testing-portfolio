@@ -21,7 +21,11 @@ from typing import Any, Dict, Optional
 # ============================================================================
 
 class TestingFrameworkError(Exception):
-    """测试框架基础异常"""
+    """测试框架基础异常
+
+    所有框架内自定义异常的基类，支持附加结构化详情信息。
+    子类包括：ConfigError、ExecutionError、EvaluationError、APIError、ValidationError、ReportingError
+    """
 
     def __init__(self, message: str, details: dict = None):
         self.message = message
@@ -35,32 +39,32 @@ class TestingFrameworkError(Exception):
 
 
 class ConfigError(TestingFrameworkError):
-    """配置相关错误"""
+    """配置相关错误 - 配置文件缺失、格式错误、字段缺失等场景"""
     pass
 
 
 class ExecutionError(TestingFrameworkError):
-    """执行相关错误"""
+    """执行相关错误 - 测试执行中断、超时、并发异常等场景"""
     pass
 
 
 class EvaluationError(TestingFrameworkError):
-    """评测相关错误"""
+    """评测相关错误 - 评测独立性违规、解析失败、结果异常等场景"""
     pass
 
 
 class APIError(TestingFrameworkError):
-    """API调用相关错误"""
+    """API调用相关错误 - 请求失败、响应异常、认证错误等场景"""
     pass
 
 
 class ValidationError(TestingFrameworkError):
-    """数据验证相关错误"""
+    """数据验证相关错误 - 文件不存在、JSON格式错误、数据结构异常等场景"""
     pass
 
 
 class ReportingError(TestingFrameworkError):
-    """报告生成相关错误"""
+    """报告生成相关错误 - 报告写入失败、数据导出异常等场景"""
     pass
 
 
@@ -81,11 +85,14 @@ def setup_logging(
     format_string: str = LOG_FORMAT
 ) -> None:
     """
-    统一日志配置
+    统一日志配置（全局单次生效）
+
+    首次调用时配置根日志器，后续调用无效（防止重复配置导致日志重复输出）。
+    支持同时输出到控制台和文件。
 
     Args:
         level: 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_file: 日志文件路径（可选）
+        log_file: 日志文件路径（可选，指定后同时输出到文件）
         format_string: 日志格式字符串
     """
     global _logging_configured
@@ -115,7 +122,7 @@ def setup_logging(
 
 def get_logger(name: str) -> logging.Logger:
     """
-    获取日志记录器
+    获取日志记录器（带缓存，避免重复创建）
 
     Args:
         name: 模块名称（通常使用 __name__）

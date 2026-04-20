@@ -98,6 +98,22 @@ class PromptTemplateLoader:
 
         return result
 
+    def render_with_project_config(self, relative_path: str, registry) -> str:
+        """使用项目配置中的模板参数渲染Prompt模板
+
+        自动注入 agent_name、agent_type、service_identity、example_domains、
+        business_scenario、business_scope 等变量。
+        """
+        variables = {
+            'agent_name': registry.agent_name,
+            'agent_type': registry.agent_type,
+            'service_identity': registry.service_identity,
+            'example_domains': registry.example_domains,
+            'business_scenario': registry.business_scenario_name,
+            'business_scope': registry.business_scenario_description,
+        }
+        return self.render(relative_path, variables)
+
     def clear_cache(self):
         """清除缓存"""
         self._cache.clear()

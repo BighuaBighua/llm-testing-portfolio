@@ -17,6 +17,15 @@ SECTION_PATTERN = re.compile(r"<!-- SECTION:(\w+) -->")
 
 
 def split_template(source_path: Path = SOURCE_FILE, output_dir: Path = SECTIONS_DIR):
+    """将完整版评测模板按 SECTION 标记拆分为独立文件
+
+    解析 customer-service-evaluator.md 中的 <!-- SECTION:xxx --> 标记，
+    将每个section的内容提取为独立的 .md 文件，供 EvaluatorPromptAssembler 按需加载。
+
+    Args:
+        source_path: 源模板文件路径（默认为 templates/customer-service-evaluator.md）
+        output_dir: 输出目录路径（默认为 templates/evaluator-sections/）
+    """
     content = source_path.read_text(encoding="utf-8")
 
     sections = {}

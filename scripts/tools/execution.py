@@ -19,7 +19,7 @@ import threading
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from tools.config import ConfigRegistry, get_api_config
+from tools.config import ConfigRegistry, get_model_under_test_config
 from tools.utils import ExecutionError, get_logger, ensure_dir
 
 logger = get_logger(__name__)
@@ -85,8 +85,7 @@ class TestRunRecorder:
             dict: 测试配置基线
         """
         if api_endpoint is None:
-            api_config = get_api_config()
-            api_endpoint = api_config.get('qianfan', {}).get('base_url', '')
+            api_endpoint = get_model_under_test_config().get('base_url', '')
 
         test_case_hash = self._get_git_hash(test_case_file)
 
@@ -187,7 +186,7 @@ class TestRunRecorder:
         self._save_config()
 
     def _get_git_hash(self, file_path: str) -> str:
-        """获取文件的 Git commit hash"""
+        """获取文件的 Git commit hash，用于配置基线的版本追踪"""
         try:
             result = subprocess.run(
                 ["git", "log", "-1", "--format=%h", "--", file_path],
@@ -200,12 +199,12 @@ class TestRunRecorder:
             return "unknown"
 
     def _save_config(self):
-        """保存配置到文件"""
+        """将当前配置基线持久化到 test_config.json 文件"""
         with open(self.config_file, 'w', encoding='utf-8') as f:
             json.dump(self.config, f, ensure_ascii=False, indent=2)
 
     def start_logging(self, test_run_id: str):
-        """开始记录执行日志"""
+        """开始记录执行日志，写入批次目录下的 test_execution.log 文件"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.log_file, 'w', encoding='utf-8') as f:
             f.write(f"[{timestamp}] INFO  Test run started: {test_run_id}\n")
@@ -221,28 +220,28 @@ class TestRunRecorder:
                 f.write(f"[{timestamp}] INFO  Starting test execution...\n")
 
     def log_case_start(self, case_id: str, index: int, total: int):
-        """记录用例开始执行"""
+        """记录用例开始执行（线程安全，通过_log_lock保证并发写入安全）"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self._log_lock:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write(f"[{timestamp}] INFO  [{index}/{total}] {case_id} started\n")
 
     def log_case_complete(self, case_id: str, index: int, total: int, status: str):
-        """记录用例执行完成"""
+        """记录用例执行完成（线程安全）"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self._log_lock:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write(f"[{timestamp}] INFO  [{index}/{total}] {case_id} completed - {status}\n")
 
     def log_error(self, case_id: str, error_message: str):
-        """记录错误信息"""
+        """记录错误信息（线程安全）"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self._log_lock:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write(f"[{timestamp}] ERROR [{case_id}] {error_message}\n")
 
     def end_logging(self, summary: Dict[str, Any]):
-        """结束记录执行日志"""
+        """结束记录执行日志，写入通过率和质量门禁判定结果"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         with open(self.log_file, 'a', encoding='utf-8') as f:
@@ -277,7 +276,7 @@ class TestRunRecorder:
         return None
 
     def validate_coverage(self, expected_total: int, actual_completed: int) -> Dict[str, Any]:
-        """验证用例覆盖率"""
+        """验证用例覆盖率（实际完成数/预期总数是否达到100%）"""
         coverage = actual_completed / expected_total if expected_total > 0 else 0
 
         return {
@@ -288,7 +287,7 @@ class TestRunRecorder:
         }
 
     def validate_consistency(self, records_count: int, results_count: int) -> Dict[str, Any]:
-        """验证结果一致性"""
+        """验证结果一致性（执行记录数与评测结果数是否相等）"""
         return {
             "name": "结果一致性",
             "expected": records_count,
@@ -297,7 +296,7 @@ class TestRunRecorder:
         }
 
     def validate_config_integrity(self) -> Dict[str, Any]:
-        """验证配置基线完整性"""
+        """验证配置基线完整性（检查必填字段是否缺失，如用例版本、模型名称等）"""
         if self.config is None:
             self.config = self.load_test_config()
 
@@ -327,7 +326,7 @@ class TestRunRecorder:
         }
 
     def generate_audit_report(self, validation_results: List[Dict[str, Any]]) -> str:
-        """生成审计报告"""
+        """生成审计报告（Markdown格式），汇总批次信息、完整性检查结果和配置基线"""
         if self.config is None:
             self.config = self.load_test_config()
 
@@ -360,13 +359,13 @@ class TestRunRecorder:
         return report
 
     def save_audit_report(self, report: str):
-        """保存审计报告"""
+        """保存审计报告到批次目录下的 audit_report.md"""
         report_file = os.path.join(self.batch_dir, "audit_report.md")
         with open(report_file, 'w', encoding='utf-8') as f:
             f.write(report)
 
     def check_version_compatibility(self, current_case_version: str) -> Dict[str, Any]:
-        """检查版本兼容性"""
+        """检查版本兼容性（当前用例版本与批次配置中的版本是否一致）"""
         if self.config is None:
             self.config = self.load_test_config()
 
@@ -379,7 +378,12 @@ class TestRunRecorder:
         }
 
     def detect_interruption(self) -> Dict[str, Any]:
-        """检测中断情况"""
+        """检测中断情况（批次未完成但状态为running，用于断点续传）
+
+        Returns:
+            包含 detected(是否检测到中断)、completed(已完成数)、total(总数)、
+            last_completed(最后完成的用例ID)、last_timestamp(最后时间戳) 的字典
+        """
         if self.config is None:
             self.config = self.load_test_config()
 

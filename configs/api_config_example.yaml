@@ -5,67 +5,76 @@
 # ============================================================================
 
 # ----------------------------------------------------------------------------
-# 🚨 重要使用说明
+# 使用说明
 # ----------------------------------------------------------------------------
-# 使用步骤：
 # 1. 复制此文件：cp api_config_example.yaml api_config.yaml
 # 2. 编辑实际文件：在 api_config.yaml 中填写你的真实 API 密钥
 # 3. 安全保护：api_config.yaml 已在 .gitignore 中，不会被提交到版本控制
 # 4. 自动加载：系统会优先加载 api_config.yaml，如果不存在则使用此模板
+#
+# 三个模型完全独立配置，换模型只需改对应配置块
+# - case_generator: 生成测试用例的模型
+# - model_under_test: 被测模型（AI客服）
+# - evaluator: 评测模型（评判回答质量）
 
 # ----------------------------------------------------------------------------
-# 📝 配置项说明
+# 生成用例模型（用于生成测试用例）
 # ----------------------------------------------------------------------------
-# - 所有配置项都使用占位符格式：YOUR_XXX_HERE
-# - 请根据你的实际情况替换为真实的 API 密钥
-# - 不需要的 API 服务可以保留占位符或删除对应配置节
-
-# ----------------------------------------------------------------------------
-# 🔑 百度千帆 API（必填 - 被测模型）
-# ----------------------------------------------------------------------------
-# 获取方式: https://console.bce.baidu.com/qianfan/
-# 状态: 🔴 必填 - 主要测试对象
-qianfan:
+case_generator:
   name: "百度千帆"
-  ak: "YOUR_QIANFAN_ACCESS_KEY_HERE"        # 🔴 请替换为你的 Access Key
-  sk: "YOUR_QIANFAN_SECRET_KEY_HERE"        # 🔴 请替换为你的 Secret Key
-  base_url: "https://aip.baidubce.com"
   model: "ernie-4.5-turbo-128k"
-  description: "主要测试对象，用于生成 AI 客服回复"
+  base_url: "https://qianfan.baidubce.com/v2/chat/completions"
+  ak: "YOUR_QIANFAN_ACCESS_KEY_HERE"
+  sk: "YOUR_QIANFAN_SECRET_KEY_HERE"
+  # 备用模型配置（主模型限流或调用失败时自动切换）
+  fallback:
+    enable: true   # true=启用备用模型（主模型失败时自动切换），false=禁用备用模型（仅使用主模型）
+    providers:
+      - name: "阿里云DashScope"
+        model: "qwen-turbo"
+        base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        api_key: "YOUR_DASHSCOPE_API_KEY_HERE"
 
 # ----------------------------------------------------------------------------
-# 🔑 阿里云 DashScope API（推荐 - 评测模型主力）
+# 被测模型（AI客服，被评测的对象）
+# 注意：被测模型不支持备用，因为评测目标就是该模型本身
 # ----------------------------------------------------------------------------
-# 获取方式: https://dashscope.console.aliyun.com/
-# 免费额度: 请查看阿里云官方文档获取最新额度信息
-# 状态: 🟡 推荐 - 主要评测模型
-dashscope:
+model_under_test:
+  name: "百度千帆"
+  model: "ernie-4.5-turbo-128k"
+  base_url: "https://qianfan.baidubce.com/v2/chat/completions"
+  ak: "YOUR_QIANFAN_ACCESS_KEY_HERE"
+  sk: "YOUR_QIANFAN_SECRET_KEY_HERE"
+
+# ----------------------------------------------------------------------------
+# 评测模型（评判回答质量的模型）
+# ----------------------------------------------------------------------------
+evaluator:
   name: "阿里云DashScope"
-  api_key: "YOUR_DASHSCOPE_API_KEY_HERE"     # 🟡 请替换为你的 API Key
-  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
   model: "qwen-turbo"
-  description: "主要评测模型，用于评估 AI 客服回复质量"
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_key: "YOUR_DASHSCOPE_API_KEY_HERE"
+  # 备用模型配置（主模型限流或调用失败时自动切换）
+  fallback:
+    enable: true   # true=启用备用模型（主模型失败时自动切换），false=禁用备用模型（仅使用主模型）
+    providers:
+      - name: "魔搭社区"
+        model: "Qwen/Qwen3.5-35B-A3B"
+        base_url: "https://api-inference.modelscope.cn/v1/"
+        api_key: "YOUR_MODELSCOPE_API_KEY_HERE"
+      - name: "百度千帆"
+        model: "ernie-4.5-turbo-128k"
+        base_url: "https://qianfan.baidubce.com/v2/chat/completions"
+        ak: "YOUR_QIANFAN_ACCESS_KEY_HERE"
+        sk: "YOUR_QIANFAN_SECRET_KEY_HERE"
 
 # ----------------------------------------------------------------------------
-# 🔑 魔搭社区 ModelScope API（可选 - 评测模型后备1）
-# ----------------------------------------------------------------------------
-# 获取方式: https://modelscope.cn/
-# 状态: 🟢 可选 - 备用评测模型
-modelscope:
-  name: "魔搭社区"
-  api_key: "YOUR_MODELSCOPE_API_KEY_HERE"    # 🟢 可选 - 备用评测模型
-  base_url: "https://api-inference.modelscope.cn/v1/"
-  model: "Qwen/Qwen3.5-35B-A3B"
-  description: "备用评测模型，用于对比验证"
-
-# ----------------------------------------------------------------------------
-# 📋 配置版本信息
+# 配置版本信息
 # ----------------------------------------------------------------------------
 config_info:
-  version: "1.0"
+  version: "2.0"
   created_date: "2026-04-10"
-  last_updated: "2026-04-10"
-  migration_from: ".env（已废弃）"
-  description: "API 配置中心化迁移，统一管理所有 API 密钥（示例模板）"
+  last_updated: "2026-04-15"
+  description: "三模型独立配置示例模板"
   file_type: "示例文件 (Template)"
   usage: "请复制为 api_config.yaml 后使用"
