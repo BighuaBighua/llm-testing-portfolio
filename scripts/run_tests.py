@@ -31,8 +31,9 @@ from tools.config import (
     validate_config_consistency,
 )
 from tools.case_manager import CaseManager
+from tools.dashboard import DashboardBuilder
 from tools.execution import TestRunRecorder
-from tools.reporting import BadCaseManager, MarkdownReportGenerator
+from tools.reporting import BadCaseManager
 from tools.test_orchestrator import TestOrchestrator
 
 
@@ -61,13 +62,13 @@ def _handle_report_only(args):
 
     print(f"📊 读取到 {len(all_results)} 条测试结果")
 
-    MarkdownReportGenerator(
-        all_results, batch_dir, model=model,
-        evaluator_model=evaluator_model,
-        test_cases_version=test_cases_version
-    ).generate()
+    DashboardBuilder(
+        results_path=results_json_path,
+        bad_cases_path=os.path.join(os.path.dirname(os.path.dirname(batch_dir)), "cases", "bad_cases", "bad_cases.json"),
+        historical_dir=os.path.dirname(batch_dir)
+    ).save(os.path.join(batch_dir, "dashboard.html"))
 
-    print(f"✅ 测试报告已重新生成: {os.path.join(batch_dir, 'summary.md')}")
+    print(f"✅ Dashboard 已重新生成: {os.path.join(batch_dir, 'dashboard.html')}")
 
 
 def _setup_batch(args, results_dir, orchestrator):
@@ -265,12 +266,13 @@ def main():
 
     recorder.save_execution_records(results, mode=output_mode)
     recorder.save_evaluation_results(results, mode=output_mode)
+    recorder.save_batch_summary(results, batch_dir)
 
-    MarkdownReportGenerator(
-        results, batch_dir, model=orchestrator.model,
-        evaluator_model=orchestrator.evaluator_model_name,
-        test_cases_version=orchestrator.test_cases_version
-    ).generate()
+    DashboardBuilder(
+        results_path=os.path.join(batch_dir, "results.json"),
+        bad_cases_path=os.path.join(project_dir, "cases", "bad_cases", "bad_cases.json"),
+        historical_dir=os.path.join(project_dir, "results")
+    ).save(os.path.join(batch_dir, "dashboard.html"))
 
     project_dir = str(get_project_dir())
     bad_case_mgr = BadCaseManager(project_dir)
