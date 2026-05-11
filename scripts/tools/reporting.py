@@ -529,8 +529,6 @@ class BadCaseManager:
 
         self._save(data)
         self.generate_changelog(data)
-        self.generate_markdown_report(data)
-        self.export_csv(data)
 
         logger.info(f"Bad Case 提取完成: 新增 {added_count} 条，更新 {updated_count} 条")
         return added_count

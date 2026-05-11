@@ -35,12 +35,14 @@ from tools.config import (
     get_evaluator_config,
     get_evaluator_providers,
     get_model_under_test_config,
-    get_dimension_names
+    get_dimension_names,
+    get_pass_statuses
 )
 from tools.config import (
     get_test_cases_path,
     get_evaluator_template_path,
-    get_results_dir
+    get_results_dir,
+    get_project_dir
 )
 from tools.config import SECURITY_DIMENSIONS
 from tools.execution import TestRunRecorder
@@ -104,6 +106,9 @@ class TestRunner:
             self._registry.evaluation_settings.get("injection_independence_policy", "strict")
             if self._registry else "strict"
         )
+
+        from tools.api_client import APIClient
+        self._api_client = APIClient(config_registry=self._registry)
 
     def load_test_cases(self, test_cases_path: str) -> Tuple[List[Dict], str]:
         """
@@ -225,7 +230,7 @@ class TestRunner:
         """调用被测模型API获取回复
 
         支持纯文本Prompt和OpenAI messages格式两种输入，
-        自动重试失败请求。
+        通过 APIClient 统一处理重试、限流、异常。
         """
         headers = {
             "Content-Type": "application/json",
@@ -250,55 +255,21 @@ class TestRunner:
                 "top_p": under_test_inference.get("top_p", 0.9)
             }
 
-        for attempt in range(max_retries):
-            try:
-                response = requests.post(self.api_url, json=data, headers=headers, timeout=api_timeout)
-                result = response.json()
-                if "choices" in result and len(result["choices"]) > 0:
-                    return result["choices"][0]["message"]["content"]
-                elif "error" in result:
-                    if attempt < max_retries - 1:
-                        print(f"  ⚠️ 被测模型API错误，第{attempt+1}次重试...")
-                        time.sleep(2)
-                        continue
-                    return f"❌ 被测模型API错误: {result['error']}"
-                else:
-                    return f"❌ 被测模型API返回异常: {result}"
-            except (requests.RequestException, KeyError, ValueError) as e:
-                if attempt < max_retries - 1:
-                    print(f"  ⚠️ 被测模型API异常，第{attempt+1}次重试: {e}")
-                    time.sleep(2)
-                    continue
-                return f"❌ 被测模型API调用异常: {e}"
-        return "❌ 被测模型API调用失败：超过最大重试次数"
+        result = self._api_client.post(self.api_url, headers, data, timeout=api_timeout)
+
+        if result is None:
+            return "❌ 被测模型API调用失败"
+        if "choices" in result and len(result["choices"]) > 0:
+            return result["choices"][0]["message"]["content"]
+        elif "error" in result:
+            return f"❌ 被测模型API错误: {result['error']}"
+        else:
+            return f"❌ 被测模型API返回异常: {result}"
 
     def _call_openai_compatible(self, prompt: str, provider: dict, max_retries: int = 1) -> Optional[str]:
-        """通过OpenAI兼容协议调用评测模型API（支持DashScope/ModelScope等Provider）"""
-        if OpenAI is None:
-            return None
-
-        client = OpenAI(
-            api_key=provider["api_key"],
-            base_url=provider["base_url"]
-        )
-
+        """通过OpenAI兼容协议调用评测模型API（委托给APIClient统一处理重试/限流/日志）"""
         evaluator_inference = self._registry.evaluator_inference if self._registry else {"temperature": 0.3, "top_p": 0.9}
-
-        for attempt in range(max_retries):
-            try:
-                response = client.chat.completions.create(
-                    model=provider["model"],
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=evaluator_inference.get("temperature", 0.3),
-                    max_tokens=2000,
-                    stream=False
-                )
-                return response.choices[0].message.content
-            except Exception as e:
-                print(f"  ⚠️ [{provider['name']}] 第{attempt+1}次调用失败: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(2)
-        return None
+        return self._api_client.call_openai(prompt, provider, max_retries=max_retries, evaluator_inference=evaluator_inference)
 
     def call_evaluator_api(self, prompt: str) -> Tuple[str, str]:
         """调用评测模型API（多Provider轮询，主Provider失败后自动切换备用Provider）
@@ -1456,7 +1427,8 @@ def main():
     # 提取 Bad Case
     try:
         from tools.reporting import BadCaseManager
-        bad_case_mgr = BadCaseManager(batch_dir)
+        project_dir = str(get_project_dir())
+        bad_case_mgr = BadCaseManager(project_dir)
         bad_case_mgr.extract_from_batch(batch_dir)
         bad_case_mgr.generate_markdown_report()
         bad_case_mgr.export_csv()
@@ -1467,7 +1439,7 @@ def main():
 
     # 更新测试配置并生成审计报告
     if recorder:
-        passed_count = sum(1 for r in results if r["evaluation_result"]["status"] in ("通过", "防御成功", "拦截成功", "无偏见"))
+        passed_count = sum(1 for r in results if r["evaluation_result"]["status"] in get_pass_statuses())
         pass_rate = passed_count / len(results) * 100 if results else 0
 
         recorder.update_test_config({
