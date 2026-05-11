@@ -1641,3 +1641,305 @@ class EvaluationCSVExporter:
         with open(results_path, 'r', encoding='utf-8') as f:
             results = json.load(f)
         return cls(results, dimension_names)
+
+
+class MarkdownReportGenerator:
+    """Markdown 测试报告生成器（过渡方案，Task 5 中替换为 DashboardBuilder）
+
+    从 TestRunner.generate_report() 迁移而来。
+    """
+
+    def __init__(self, results, batch_dir, model="unknown", evaluator_model="unknown",
+                 test_cases_version="unknown"):
+        self._results = results
+        self._batch_dir = batch_dir
+        self._model = model
+        self._evaluator_model = evaluator_model
+        self._test_cases_version = test_cases_version
+
+    def generate(self):
+        """生成 Markdown 测试报告"""
+        from tools.config import get_pass_statuses, get_fail_statuses, get_dimension_names
+
+        pass_statuses = get_pass_statuses()
+        fail_statuses = get_fail_statuses()
+        dimension_names = get_dimension_names()
+
+        all_results = self._results
+        results_json_path = os.path.join(self._batch_dir, "results.json")
+        if os.path.exists(results_json_path):
+            with open(results_json_path, 'r', encoding='utf-8') as f:
+                all_results = json.load(f)
+
+        total = len(all_results)
+        passed = sum(1 for r in all_results if r["evaluation_result"]["status"] in pass_statuses)
+        failed = sum(1 for r in all_results if r["evaluation_result"]["status"] in fail_statuses)
+        skipped = sum(1 for r in all_results if r["evaluation_result"]["status"] == "跳过")
+        unknown = total - passed - failed - skipped
+
+        dimension_stats = {}
+        for result in all_results:
+            dim = result["dimension"]
+            if dim not in dimension_stats:
+                dimension_stats[dim] = {"passed": 0, "failed": 0, "unknown": 0}
+            status = result["evaluation_result"]["status"]
+            if status in pass_statuses:
+                dimension_stats[dim]["passed"] += 1
+            elif status in fail_statuses:
+                dimension_stats[dim]["failed"] += 1
+            else:
+                dimension_stats[dim]["unknown"] += 1
+
+        pin_stats = {"total": 0, "defense_success": 0, "bypass_success": 0, "unknown": 0, "bypass_types": {}}
+        for result in all_results:
+            if result["dimension"] == "prompt_injection":
+                pin_stats["total"] += 1
+                status = result["evaluation_result"]["status"]
+                if status in pass_statuses:
+                    pin_stats["defense_success"] += 1
+                elif status in fail_statuses:
+                    pin_stats["bypass_success"] += 1
+                    security_detail = result.get("security_detail", {})
+                    pin_detail = security_detail.get("prompt_injection", {})
+                    if not pin_detail:
+                        pin_detail = result.get("prompt_injection_detail", {})
+                    bt = pin_detail.get("bypass_type", "unknown")
+                    if bt not in pin_stats["bypass_types"]:
+                        pin_stats["bypass_types"][bt] = 0
+                    pin_stats["bypass_types"][bt] += 1
+                else:
+                    pin_stats["unknown"] += 1
+
+        provider_stats = {}
+        for result in all_results:
+            provider = result.get("evaluator_provider", "unknown")
+            if provider not in provider_stats:
+                provider_stats[provider] = 0
+            provider_stats[provider] += 1
+
+        report = f"""# 自动化测试报告
+
+> 执行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+> 测试框架: AI客服自动化测试框架 v3.0（统一评测管线 + 动态Prompt组装）
+> 待测模型: {self._model}
+> 评测模型: {self._evaluator_model}
+> 用例版本: v{self._test_cases_version}
+
+---
+
+## 📊 执行概况
+
+- **用例总数**: {total}
+- **通过数**: {passed}
+- **不通过数**: {failed}
+- **未知状态**: {unknown}
+- **跳过数**: {skipped}
+- **有效通过率**: {(passed/total*100):.1f}%（跳过 {skipped} 条视为不通过）
+- **通过率**: {(passed/total*100):.1f}%
+- **用例版本**: v{self._test_cases_version}
+
+---
+
+## 🔌 评测API使用分布
+
+| Provider | 调用次数 |
+|----------|----------|
+"""
+        for provider, count in sorted(provider_stats.items(), key=lambda x: x[1], reverse=True):
+            report += f"| {provider} | {count} |\n"
+
+        report += f"""
+---
+
+## 📋 维度统计
+
+| 维度 | 中文注释 | 通过 | 不通过 | 通过率 |
+|------|---------|------|--------|--------|
+"""
+        for dim, stats in sorted(dimension_stats.items()):
+            dim_total = stats["passed"] + stats["failed"]
+            pass_rate = (stats["passed"] / dim_total * 100) if dim_total > 0 else 0
+            dim_name = dimension_names.get(dim, dim)
+            report += f"| {dim} | {dim_name} | {stats['passed']} | {stats['failed']} | {pass_rate:.1f}% |\n"
+
+        if pin_stats["total"] > 0:
+            bypass_rate = (pin_stats["bypass_success"] / pin_stats["total"] * 100) if pin_stats["total"] > 0 else 0
+            defense_rate = (pin_stats["defense_success"] / pin_stats["total"] * 100) if pin_stats["total"] > 0 else 0
+            report += f"""
+---
+
+## 🛡️ Prompt注入攻击绕过成功率统计
+
+| 指标 | 数值 |
+|------|------|
+| 总测试用例数 | {pin_stats['total']} |
+| 防御成功数 | {pin_stats['defense_success']} |
+| 绕过成功数 | {pin_stats['bypass_success']} |
+| 未知状态数 | {pin_stats['unknown']} |
+| **防御成功率** | **{defense_rate:.1f}%** |
+| **绕过成功率** | **{bypass_rate:.1f}%** |
+"""
+            if pin_stats["bypass_types"]:
+                report += "\n### 绕过类型分布\n\n| 绕过类型 | 次数 |\n|----------|------|\n"
+                for bt, count in sorted(pin_stats["bypass_types"].items(), key=lambda x: x[1], reverse=True):
+                    report += f"| {bt} | {count} |\n"
+
+        report += "\n---\n\n## 📝 详细测试结果\n\n"
+
+        for result in all_results:
+            case_id = result.get('test_case_id') or result.get('id', 'UNKNOWN')
+            dimension = result.get('dimension', 'unknown')
+            input_text = result.get('input', '')
+            customer_response = result.get('customer_response', '') or result.get('actual_response', '')
+            evaluator_provider = result.get('evaluator_provider', 'unknown')
+
+            if dimension == 'multi_turn':
+                scenario_line = input_text.split('\n')[0] if '\n' in input_text else input_text
+                report += f"""### {case_id} - {dimension}
+
+**测试状态**: {result['evaluation_result']['status']}
+**评测API**: {evaluator_provider}
+
+**对话场景**: {scenario_line}
+
+**逐轮对话记录**:
+```
+{customer_response}
+```
+
+**评测结果**:
+- 维度焦点: {result['evaluation_result'].get('dimension_focus', '')}
+- 上下文一致性: {result['evaluation_result'].get('context_consistency', '')}
+- 指令坚守性: {result['evaluation_result'].get('instruction_adherence', '')}
+- 规则稳定性: {result['evaluation_result'].get('rule_stability', '')}
+"""
+            elif dimension in ('prompt_injection', 'sensitive_topic', 'bias_fairness'):
+                security_detail = result.get("security_detail", {})
+                dim_detail = security_detail.get(dimension, {})
+                if dimension == 'prompt_injection':
+                    report += f"""### {case_id} - {dimension}
+
+**防御结果**: {result['evaluation_result']['status']}
+**评测API**: {evaluator_provider}
+
+**攻击手法**: {dim_detail.get('attack_type_cn', '')}（{dim_detail.get('attack_type', '')}）
+
+**用户输入**:
+```
+{input_text}
+```
+
+**客服回答**:
+```
+{customer_response[:500]}{'...' if len(customer_response) > 500 else ''}
+```
+
+**评测结果**:
+- 防御结果: {dim_detail.get('defense_result', '未知')}
+- 绕过类型: {dim_detail.get('bypass_type', '无')}
+- 判定结论: {dim_detail.get('evaluation_conclusion', '')}
+"""
+                elif dimension == 'sensitive_topic':
+                    report += f"""### {case_id} - {dimension}
+
+**拦截结果**: {result['evaluation_result']['status']}
+**评测API**: {evaluator_provider}
+
+**话题类型**: {dim_detail.get('topic_type_cn', '')}（{dim_detail.get('topic_type', '')}）
+**用例类型**: {dim_detail.get('case_type', '')}
+**绕过手法**: {dim_detail.get('evasion_type_cn', '')}（{dim_detail.get('evasion_type', '')}）
+
+**用户输入**:
+```
+{input_text}
+```
+
+**客服回答**:
+```
+{customer_response[:500]}{'...' if len(customer_response) > 500 else ''}
+```
+
+**评测结果**:
+- 判定结论: {dim_detail.get('evaluation_conclusion', '')}
+"""
+                elif dimension == 'bias_fairness':
+                    report += f"""### {case_id} - {dimension}
+
+**偏见判定**: {result['evaluation_result']['status']}
+**评测API**: {evaluator_provider}
+
+**偏见类型**: {dim_detail.get('bias_type_cn', '')}（{dim_detail.get('bias_type', '')}）
+**偏见等级**: {dim_detail.get('bias_level', '')}
+
+**用户输入**:
+```
+{input_text}
+```
+
+**客服回答**:
+```
+{customer_response[:500]}{'...' if len(customer_response) > 500 else ''}
+```
+
+**评测结果**:
+- 判定结论: {dim_detail.get('evaluation_conclusion', '')}
+"""
+            else:
+                report += f"""### {case_id} - {dimension}
+
+**测试状态**: {result['evaluation_result']['status']}
+**评测API**: {evaluator_provider}
+
+**用户提问**:
+```
+{input_text}
+```
+
+**客服回答**:
+```
+{customer_response[:500]}{'...' if len(customer_response) > 500 else ''}
+```
+
+**评测结果**:
+- 准确性: {result['evaluation_result']['accuracy']}
+- 完整性: {result['evaluation_result']['completeness']}
+- 合规性: {result['evaluation_result']['compliance']}
+- 态度: {result['evaluation_result']['attitude']}
+"""
+                if result['evaluation_result'].get('dimension_focus'):
+                    report += f"- 维度焦点: {result['evaluation_result']['dimension_focus']}\n"
+
+            if result['evaluation_result']['issues']:
+                report += f"\n**违规说明**: {', '.join(result['evaluation_result']['issues'])}\n\n"
+
+            report += "---\n\n"
+
+        report += f"""## 💡 测试总结
+
+- 总通过率: {(passed/total*100):.1f}%
+- 评测模型: {self._evaluator_model}
+- 主要问题分布:
+"""
+
+        issue_distribution = {}
+        for result in all_results:
+            for issue in result['evaluation_result']['issues']:
+                if issue not in issue_distribution:
+                    issue_distribution[issue] = 0
+                issue_distribution[issue] += 1
+
+        for issue, count in sorted(issue_distribution.items(), key=lambda x: x[1], reverse=True):
+            report += f"  - {issue}: {count} 次\n"
+
+        report += f"""
+---
+
+*报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
+*框架版本: V3.2（组件编排 + MarkdownReportGenerator 过渡方案）*
+"""
+
+        output_path = os.path.join(self._batch_dir, "summary.md")
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(report)
+
+        print(f"✅ 测试报告已生成: {output_path}")
