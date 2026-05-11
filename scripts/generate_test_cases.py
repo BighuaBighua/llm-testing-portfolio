@@ -172,7 +172,7 @@ from tools.config import get_case_generator_config
 from tools.config import get_test_cases_path
 from tools.config import ConfigRegistry, EvaluationContext
 from tools.config import set_current_project, ensure_project_dirs
-from tools.config import SECURITY_DIMENSIONS
+from tools.config import get_security_dimensions
 from tools.prompt_template import PromptTemplateLoader
 
 logger = logging.getLogger(__name__)
@@ -264,7 +264,7 @@ class TestCaseGenerator:
             self.multi_turn_scenario_index += 1
             return self._build_multi_turn_generation_prompt(scenario_type)
 
-        if dimension in SECURITY_DIMENSIONS:
+        if dimension in get_security_dimensions():
             return self._build_security_generation_prompt(dimension, count)
 
         dim_config = self._registry.get_dimension_config(dimension)
@@ -695,7 +695,7 @@ class TestCaseGenerator:
             while remaining > 0:
                 if dimension == "multi_turn":
                     batch_count = 1
-                elif dimension in SECURITY_DIMENSIONS:
+                elif dimension in get_security_dimensions():
                     batch_count = min(count, remaining)
                 else:
                     batch_count = min(batch_size, remaining)
