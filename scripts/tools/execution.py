@@ -424,4 +424,88 @@ class TestRunRecorder:
             "last_timestamp": last_timestamp
         }
 
+    def save_execution_records(self, results, output_path=None, mode="append"):
+        """保存执行记录到 results.json
+
+        Args:
+            results: 评测结果列表
+            output_path: 输出文件路径，默认为 batch_dir/results.json
+            mode: 写入模式 - append(追加) / overwrite(覆盖)
+        """
+        if output_path is None:
+            output_path = os.path.join(self.batch_dir, "results.json")
+
+        if mode == "append" and os.path.exists(output_path):
+            with open(output_path, 'r', encoding='utf-8') as f:
+                existing = json.load(f)
+            if not isinstance(existing, list):
+                existing = []
+            existing.extend(results)
+            results = existing
+
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(results, f, ensure_ascii=False, indent=2)
+
+        print(f"💾 保存执行记录: {len(results)} 条 → {output_path}")
+
+    def save_evaluation_results(self, results, output_path=None, mode="append",
+                                model=None, version=None):
+        """保存评测结果（与 save_execution_records 相同，保留兼容性）
+
+        Args:
+            results: 评测结果列表
+            output_path: 输出文件路径
+            mode: 写入模式
+            model: 被测模型名称（用于日志）
+            version: 用例版本（用于日志）
+        """
+        self.save_execution_records(results, output_path, mode)
+
+    def save_batch_summary(self, results, batch_dir=None):
+        """生成轻量级批次聚合数据，供 Dashboard 趋势 Tab 使用
+
+        Args:
+            results: 评测结果列表
+            batch_dir: 批次目录，默认使用 self.batch_dir
+        """
+        from tools.config import get_pass_statuses
+
+        if batch_dir is None:
+            batch_dir = self.batch_dir
+
+        pass_statuses = get_pass_statuses()
+        total = len(results)
+        passed = sum(1 for r in results if r.get("evaluation_result", {}).get("status") in pass_statuses)
+
+        dim_stats = {}
+        for r in results:
+            dim = r.get("dimension", "unknown")
+            if dim not in dim_stats:
+                dim_stats[dim] = {"total": 0, "passed": 0}
+            dim_stats[dim]["total"] += 1
+            if r.get("evaluation_result", {}).get("status") in pass_statuses:
+                dim_stats[dim]["passed"] += 1
+
+        summary = {
+            "batch_id": self.config.get("batch_id", "unknown") if self.config else "unknown",
+            "total": total,
+            "passed": passed,
+            "failed": total - passed,
+            "pass_rate": round(passed / total, 4) if total > 0 else 0,
+            "dimensions": dim_stats,
+            "model_under_test": self.config.get("environment", {}).get("model_under_test", "unknown") if self.config else "unknown",
+            "timestamp": self._get_timestamp(),
+        }
+
+        summary_path = os.path.join(batch_dir, "batch_summary.json")
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            json.dump(summary, f, ensure_ascii=False, indent=2)
+
+        print(f"📊 保存批次摘要: {summary_path}")
+
+    @staticmethod
+    def _get_timestamp():
+        from datetime import datetime
+        return datetime.now().isoformat()
+
 
