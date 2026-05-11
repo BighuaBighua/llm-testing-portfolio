@@ -675,6 +675,109 @@ class EvaluatorPromptAssembler:
 
         return "\n".join(lines)
 
+
+class EvaluationResultBuilder:
+    """评测结果字典构建器
+
+    从 TestRunner 迁移而来，负责将解析后的评测结果组装为标准结果字典。
+    注意坑19：test_cases_version 和 evaluator_model_name 作为参数显式传入，
+    不从全局状态获取。
+    """
+
+    def build_standard_result(self, parsed: dict, test_case: dict,
+                              customer_response: str,
+                              test_cases_version: str,
+                              evaluator_model_name: str) -> dict:
+        """构建标准维度结果字典"""
+        from tools.config import get_fail_statuses
+
+        result = {
+            "id": test_case["id"],
+            "dimension": test_case["dimension"],
+            "input": test_case["input"],
+            "actual_response": customer_response,
+            "evaluation_result": {
+                "status": parsed.get("status", "未知"),
+                "accuracy": parsed.get("accuracy", ""),
+                "completeness": parsed.get("completeness", ""),
+                "compliance": parsed.get("compliance", ""),
+                "attitude": parsed.get("attitude", ""),
+                "dimension_focus": parsed.get("dimension_focus", ""),
+                "issues": parsed.get("issues", []),
+            },
+            "timestamp": self._get_timestamp(),
+            "evaluator_model": evaluator_model_name,
+            "test_case_version": test_cases_version,
+        }
+
+        if result["evaluation_result"]["status"] in get_fail_statuses():
+            result["evaluation_result"]["violation_details"] = parsed.get("violation_details", "")
+
+        return result
+
+    def build_security_result(self, parsed: dict, test_case: dict,
+                              customer_response: str,
+                              test_cases_version: str,
+                              evaluator_model_name: str) -> dict:
+        """构建安全维度结果字典"""
+        result = {
+            "id": test_case["id"],
+            "dimension": test_case["dimension"],
+            "input": test_case["input"],
+            "actual_response": customer_response,
+            "evaluation_result": {
+                "status": parsed.get("status", "未知"),
+                "accuracy": "",
+                "completeness": "",
+                "compliance": "",
+                "attitude": "",
+                "dimension_focus": parsed.get("dimension_focus", ""),
+                "issues": parsed.get("issues", []),
+            },
+            "security_detail": parsed.get("security_detail", {}),
+            "timestamp": self._get_timestamp(),
+            "evaluator_model": evaluator_model_name,
+            "test_case_version": test_cases_version,
+        }
+
+        return result
+
+    def build_multi_turn_result(self, parsed: dict, test_case: dict,
+                                turn_results: list,
+                                test_cases_version: str,
+                                evaluator_model_name: str) -> dict:
+        """构建多轮对话结果字典"""
+        from tools.config import get_fail_statuses
+
+        result = {
+            "id": test_case["id"],
+            "dimension": test_case.get("dimension", "multi_turn"),
+            "input": test_case.get("conversation", []),
+            "actual_response": turn_results,
+            "evaluation_result": {
+                "status": parsed.get("status", "未知"),
+                "accuracy": parsed.get("accuracy", ""),
+                "completeness": parsed.get("completeness", ""),
+                "compliance": parsed.get("compliance", ""),
+                "attitude": parsed.get("attitude", ""),
+                "dimension_focus": parsed.get("dimension_focus", ""),
+                "issues": parsed.get("issues", []),
+            },
+            "timestamp": self._get_timestamp(),
+            "evaluator_model": evaluator_model_name,
+            "test_case_version": test_cases_version,
+        }
+
+        if result["evaluation_result"]["status"] in get_fail_statuses():
+            result["evaluation_result"]["violation_details"] = parsed.get("violation_details", "")
+
+        return result
+
+    @staticmethod
+    def _get_timestamp() -> str:
+        from datetime import datetime
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     def _format_test_input(self, test_case: dict, dimension: str) -> str:
         """格式化测试输入内容
 
