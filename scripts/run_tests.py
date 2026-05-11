@@ -277,8 +277,6 @@ def main():
     project_dir = str(get_project_dir())
     bad_case_mgr = BadCaseManager(project_dir)
     bad_case_mgr.extract_from_batch(batch_dir)
-    bad_case_mgr.generate_markdown_report()
-    bad_case_mgr.export_csv()
     stats = bad_case_mgr.get_statistics()
     print(f"📊 Bad Case 统计: 总计 {stats['total']} 条, P0 {stats['by_severity'].get('P0', 0)} 条, P1 {stats['by_severity'].get('P1', 0)} 条")
 
