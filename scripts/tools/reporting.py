@@ -161,9 +161,38 @@ class BadCaseManager:
         if root_cause.get("category") != "unclassified":
             improvement_suggestion = f"建议针对{root_cause.get('category_cn', '')}问题进行优化"
 
+        test_case_id = result.get("id", result.get("test_case_id", ""))
+
+        reproduction_steps = []
+        if dimension == "multi_turn":
+            turn_results = result.get("actual_response", [])
+            if isinstance(turn_results, list):
+                for t in turn_results:
+                    if isinstance(t, dict):
+                        reproduction_steps.append({
+                            "step": t.get("turn", len(reproduction_steps) + 1),
+                            "action": f"第{t.get('turn', '?')}轮：用户发送输入",
+                            "input": t.get("user", ""),
+                            "actual_output": t.get("assistant", ""),
+                        })
+        else:
+            reproduction_steps = [{
+                "step": 1,
+                "action": "用户发送输入",
+                "input": input_text,
+                "actual_output": actual_response,
+            }]
+
+        environment = {
+            "model_under_test": result.get("model_under_test", ""),
+            "evaluator_model": result.get("evaluator_model", ""),
+            "api_provider": result.get("evaluator_provider", ""),
+            "test_case_version": result.get("test_case_version", ""),
+        }
+
         return {
             "case_id": "",
-            "source_test_case_id": result.get("id", result.get("test_case_id", "")),
+            "source_test_case_id": test_case_id,
             "source_batch_id": batch_id,
             "severity": severity,
             "bad_case_type": bad_case_type,
@@ -177,6 +206,8 @@ class BadCaseManager:
             "security_detail": security_detail,
             "root_cause": root_cause,
             "improvement_suggestion": improvement_suggestion,
+            "reproduction_steps": reproduction_steps,
+            "environment": environment,
             "first_seen": datetime.now().strftime("%Y-%m-%d"),
             "last_seen": datetime.now().strftime("%Y-%m-%d"),
             "occurrence_count": 1,
@@ -337,8 +368,46 @@ class BadCaseManager:
         self._save(data)
         self.generate_changelog(data)
 
+        self._merge_bug_list_if_exists(batch_dir, data)
+
         logger.info(f"Bad Case 提取完成: 新增 {added_count} 条，更新 {updated_count} 条")
         return added_count
+
+    def _merge_bug_list_if_exists(self, batch_dir: str, data: Dict):
+        """如果批次目录下存在 bug_list.json，将其中的 reproduction_steps 和 environment 合并到 bad_cases.json"""
+        bug_list_path = os.path.join(batch_dir, "bug_list.json")
+        if not os.path.exists(bug_list_path):
+            return
+
+        try:
+            with open(bug_list_path, 'r', encoding='utf-8') as f:
+                bug_list = json.load(f)
+
+            if not isinstance(bug_list, list):
+                bug_list = [bug_list]
+
+            bug_map = {}
+            for bug in bug_list:
+                source_id = bug.get("source_test_case_id", "")
+                if source_id:
+                    bug_map[source_id] = bug
+
+            merged_count = 0
+            for case in data.get("bad_cases", []):
+                source_id = case.get("source_test_case_id", "")
+                if source_id in bug_map:
+                    bug = bug_map[source_id]
+                    if not case.get("reproduction_steps") and bug.get("reproduce_steps"):
+                        case["reproduction_steps"] = bug["reproduce_steps"]
+                    if not case.get("environment") and bug.get("environment"):
+                        case["environment"] = bug["environment"]
+                    merged_count += 1
+
+            if merged_count > 0:
+                self._save(data)
+                logger.info(f"从 bug_list.json 合并了 {merged_count} 条记录的 reproduction_steps/environment")
+        except Exception as e:
+            logger.warning(f"合并 bug_list.json 失败: {e}")
 
     def extract_from_all_batches(self) -> int:
         """遍历项目下所有批次结果目录，全量提取 Bad Case
