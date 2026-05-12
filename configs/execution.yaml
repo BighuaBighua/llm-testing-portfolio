@@ -35,6 +35,11 @@ parameters:
     max_attempts: 3
     backoff_factor: 2
     max_delay: 60
+    status_forcelist: [429, 500, 502, 503, 504]
+    no_retry_status_codes: [400, 401, 403]
+  rate_limit:
+    delay_between_calls: 1.0
+    delay_on_429: 10
   performance:
     batch_size: 10
     max_batch_size: 50

@@ -268,12 +268,10 @@ llm-testing-portfolio/
 
 | 类 | 职责 |
 |----|------|
-| `BadCaseManager` | Bad Case管理器（提取/去重/累积/状态流转/多格式输出） |
-| `BugListGenerator` | Bug清单生成器（Markdown+JSON，含复现步骤和环境信息） |
+| `BadCaseManager` | Bad Case管理器（提取/去重/累积/状态流转/CSV导出） |
 | `SecurityStatsGenerator` | 安全维度统一统计生成器（Prompt注入+敏感话题+偏见公平性） |
-| `BypassStatsGenerator` | 绕过成功率统计工具（已弃用，组合为SecurityStatsGenerator） |
 | `SecurityReportGenerator` | 安全专项总报告生成器（总体评估+维度详情+风险评级+建议） |
-| `EvaluationCSVExporter` | 评测结果CSV导出工具（明细CSV+统计汇总CSV） |
+| `MarkdownReportGenerator` | Markdown测试报告生成器（执行概况+维度统计+Bad Case分析+历史趋势+详细用例） |
 
 **Bad Case 严重程度**：P0（合规性不通过/绕过成功）、P1（其他不通过）
 
@@ -771,13 +769,10 @@ projects/{name}/evaluator-sections/ (项目层，按项目定制)
 | `test_execution.log` | 执行日志（用例级记录） |
 | `records.json` | 执行记录（AI实际回答） |
 | `results.json` | 评测结果（判定详情，含security_detail字段） |
-| `summary.md` | 测试报告（人类可读） |
-| `bug_list.md/json` | Bug清单（不通过用例） |
+| `summary.md` | Markdown测试报告（执行概况+维度统计+Bad Case分析+历史趋势+详细用例） |
 | `audit_report.md` | 审计报告（完整性检查） |
-| `evaluation_detail.csv` | 评测明细CSV |
-| `evaluation_summary.csv` | 统计汇总CSV |
-| `bypass_stats_report.md` | 绕过成功率统计 |
 | `security_report.md` | 安全专项测试报告（3维度统一评估+风险评级） |
+| `batch_summary.json` | 批次摘要（通过率统计，供历史趋势使用） |
 
 ---
 
