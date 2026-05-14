@@ -60,12 +60,18 @@ configs/*_local.yaml
 *.log
 logs/
 
-# Results - keep batch-016 as example
+# Results - keep batch-016 and batch-017 as examples
 projects/*/results/*
 !projects/*/results/batch-016*/
 !projects/*/results/batch-016*/*.json
 !projects/*/results/batch-016*/*.md
 !projects/*/results/batch-016*/*.csv
+!projects/*/results/batch-016*/charts/*.png
+!projects/*/results/batch-017*/
+!projects/*/results/batch-017*/*.json
+!projects/*/results/batch-017*/*.md
+!projects/*/results/batch-017*/*.csv
+!projects/*/results/batch-017*/charts/*.png
 
 # Bad Case tracking files
 !projects/*/cases/bad_cases/*.json

@@ -1201,6 +1201,8 @@ class MarkdownReportGenerator:
             dim_name = dimension_names.get(dim, dim)
             report += f"| {dim} | {dim_name} | {stats['passed']} | {stats['failed']} | {pass_rate:.1f}% |\n"
 
+        report += self._generate_dimension_chart(dimension_stats, dimension_names)
+
         if pin_stats["total"] > 0:
             bypass_rate = (pin_stats["bypass_success"] / pin_stats["total"] * 100) if pin_stats["total"] > 0 else 0
             defense_rate = (pin_stats["defense_success"] / pin_stats["total"] * 100) if pin_stats["total"] > 0 else 0
@@ -1375,6 +1377,94 @@ class MarkdownReportGenerator:
             report += f"  - {issue}: {count} 次\n"
 
         return report
+
+    def _generate_dimension_chart(self, dimension_stats: Dict, dimension_names: Dict) -> str:
+        try:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            import matplotlib.font_manager as fm
+            import numpy as np
+        except ImportError:
+            logger.warning("matplotlib 未安装，跳过维度图表生成")
+            return ""
+
+        chinese_fonts = [f.name for f in fm.fontManager.ttflist
+                         if any(k in f.name.lower() for k in
+                                ['pingfang', 'heiti', 'songti', 'stfang',
+                                 'arial unicode', 'noto sans cjk', 'hiragino'])]
+        if chinese_fonts:
+            plt.rcParams['font.sans-serif'] = [chinese_fonts[0], 'Arial Unicode MS', 'sans-serif']
+        else:
+            plt.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'sans-serif']
+        plt.rcParams['axes.unicode_minus'] = False
+
+        COLOR_PASS = '#2ecc71'
+        COLOR_FAIL = '#e74c3c'
+        COLOR_BG = '#ffffff'
+        COLOR_GRID = '#f0f0f0'
+        COLOR_TEXT = '#2c3e50'
+
+        items = []
+        for dim, stats in dimension_stats.items():
+            p = stats.get("passed", 0)
+            f = stats.get("failed", 0)
+            u = stats.get("unknown", 0)
+            dim_name = dimension_names.get(dim, dim)
+            items.append((dim_name, p, f + u))
+
+        if not items:
+            return ""
+
+        items.sort(key=lambda x: x[1] / (x[1] + x[2]) if (x[1] + x[2]) > 0 else 0)
+
+        labels = [it[0] for it in items]
+        passed = [it[1] for it in items]
+        failed = [it[2] for it in items]
+        totals = [p + f for p, f in zip(passed, failed)]
+        pass_rates = [p / t * 100 if t > 0 else 0 for p, t in zip(passed, totals)]
+
+        fig, ax = plt.subplots(figsize=(10, max(4, len(labels) * 0.45)))
+        fig.patch.set_facecolor(COLOR_BG)
+        ax.set_facecolor(COLOR_BG)
+
+        y_pos = np.arange(len(labels))
+        ax.barh(y_pos, passed, height=0.6, color=COLOR_PASS, label='通过',
+                edgecolor='white', linewidth=0.5)
+        ax.barh(y_pos, failed, height=0.6, left=passed, color=COLOR_FAIL, label='不通过',
+                edgecolor='white', linewidth=0.5)
+
+        for i, (rate, total) in enumerate(zip(pass_rates, totals)):
+            if rate < 80:
+                ax.text(total + 0.3, i, f'{rate:.0f}% !!', va='center', ha='left',
+                        fontsize=9, color=COLOR_FAIL, fontweight='bold')
+            else:
+                ax.text(total + 0.3, i, f'{rate:.0f}%', va='center', ha='left',
+                        fontsize=8, color='#7f8c8d')
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(labels, fontsize=10, color=COLOR_TEXT)
+        ax.set_xlabel('用例数', fontsize=10, color=COLOR_TEXT)
+        ax.set_title('各维度通过率', fontsize=13, fontweight='bold', color=COLOR_TEXT, pad=12)
+        ax.legend(loc='lower right', fontsize=9, frameon=True, fancybox=True, framealpha=0.8)
+        ax.set_xlim(0, max(totals) + max(totals) * 0.25)
+        ax.grid(axis='x', color=COLOR_GRID, linewidth=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#e0e0e0')
+        ax.spines['bottom'].set_color('#e0e0e0')
+        ax.tick_params(colors='#7f8c8d')
+
+        plt.tight_layout()
+
+        charts_dir = os.path.join(self._batch_dir, "charts")
+        ensure_dir(charts_dir)
+        chart_path = os.path.join(charts_dir, "dimension_pass_rate.png")
+        fig.savefig(chart_path, dpi=150, bbox_inches='tight', facecolor=COLOR_BG)
+        plt.close(fig)
+
+        logger.info(f"维度通过率图表已生成: {chart_path}")
+        return "\n![各维度通过率](./charts/dimension_pass_rate.png)\n"
 
     def _generate_bad_case_section(self) -> str:
         if not self._bad_cases_path or not os.path.exists(self._bad_cases_path):
